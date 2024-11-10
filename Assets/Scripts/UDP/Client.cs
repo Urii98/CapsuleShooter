@@ -1,207 +1,121 @@
-using System.Collections;
-using System.ComponentModel;
+using System;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
 using UnityEngine;
-using UnityEngine.SceneManagement;
-using UnityEngine.UI;
-using UnityEngine.Windows;
 
 public class Client : MonoBehaviour
 {
-    Thread messagingThread;
-    Thread wait;
+    private Socket socket;
+    private EndPoint serverEndPoint;
+    private Thread receiveThread;
+    private bool isRunning = false;
 
-    string serverIP = "127.0.0.1";
-    int serverPort;
+    // Variables compartidas
+    private bool startGame = false;
 
-    Socket socket;
-    EndPoint remote;
-    IPEndPoint endPoint;
+    public MainMenuManager mainMenuManager; // Asignar en el Inspector
 
-    bool startGame;
-    bool startConnection; 
-
-    void Start()
-    {
-        startGame = false;
-        startConnection = false;
-        messagingThread = new Thread(ConnectServer);
-        wait = new Thread(WaitForConnection);
-
-        StartCoroutine(FillField());
-    }
     void Update()
     {
-        if (startConnection)
-        {
-            Connected();
-            startConnection = false;
-        }
-
         if (startGame)
         {
-            ChangeScene();
             startGame = false;
+            mainMenuManager.StartGame();
         }
     }
 
-    IEnumerator FillField()
+    public bool ConnectToServer(string ip, int port)
     {
-        // Get IP address
-        string myIp = GetIP();
-        int i = myIp.LastIndexOf('.');
-        myIp = myIp.Substring(0, i + 1);
-
-        // Fill the field
-        InputField inputIP = GameObject.Find("ServerIP").GetComponent<InputField>();
-        inputIP.text = myIp;
-        inputIP.Select();
-
-        InputField nameInput = GameObject.Find("User Name").GetComponent<InputField>();
-        nameInput.text = "9000";
-
-        yield return new WaitForEndOfFrame();
-
-        //Needs to wait to set cursor
-        inputIP.caretPosition = inputIP.text.Length;
-        inputIP.ForceLabelUpdate();
-    }
-    public void SelectPort()
-    {
-        StartCoroutine(SelectPortCoroutine());
-    }
-
-    IEnumerator SelectPortCoroutine()
-    {
-        InputField inputPort = GameObject.Find("User Name").GetComponent<InputField>();
-        inputPort.Select();
-
-        yield return new WaitForEndOfFrame();
-
-        inputPort.caretPosition = inputPort.text.Length;
-        inputPort.ForceLabelUpdate();
-    }
-
-    public void SetIP()
-    {
-        InputField inputIP = GameObject.Find("ServerIP").GetComponent<InputField>();
-        InputField portInput = GameObject.Find("User Name").GetComponent<InputField>();
-        serverIP = inputIP.text.ToString();
-        serverPort = int.Parse(portInput.text.ToString());
-
-        StartConnection();
-    }
-    public void StartConnection()
-    {
-        socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-        endPoint = new IPEndPoint(IPAddress.Parse(serverIP), serverPort);
-
-        IPEndPoint sender = new IPEndPoint(IPAddress.Any, 0);
-        remote = (EndPoint)sender;
-
-        messagingThread.Start();
-    }
-
-    void ChangeScene()
-    {
-        SceneManager.LoadScene("Lobby");
-    }
-
-    void Connected()
-    {
-        Multiplayer ms = FindObjectOfType<Multiplayer>();
-        ms.socket = socket;
-        ms.remote = remote;
-        ms.isServer = false;
-        wait.Start();
-    }
-
-    void WaitForConnection()
-    {
-        Debug.Log("Waiting for connection...");
-
-        byte[] data = new byte[1024];
-        int recv; 
-        
         try
         {
-            recv = socket.ReceiveFrom(data, ref remote);
-        }
-        catch
-        {
-            Debug.Log("Error receiving data");
-            StopConnection();
-            return; 
-        }
+            socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            serverEndPoint = new IPEndPoint(IPAddress.Parse(ip), port);
 
-        string message = Encoding.ASCII.GetString(data, 0, recv);
+            // Enviar mensaje de conexión
+            byte[] data = System.Text.Encoding.ASCII.GetBytes("ClientConnected");
+            socket.SendTo(data, serverEndPoint);
+            Debug.Log("Enviado 'ClientConnected' al servidor.");
 
-        // Start game
-        if(message == "StartGame")
-        {
-            startGame = true;
+            // Iniciar hilo de recepción
+            isRunning = true;
+            receiveThread = new Thread(ReceiveData);
+            receiveThread.IsBackground = true;
+            receiveThread.Start();
+            return true;
         }
-        else
+        catch (Exception ex)
         {
-            Debug.Log("Cannot start game: " + message);
-            StopConnection();
+            Debug.Log("Error al conectar al servidor: " + ex.Message);
+            return false;
         }
     }
 
-    public void StopConnection()
+    private void ReceiveData()
     {
-        socket.Close();
-        Debug.Log("Connection closed");
-    }
-
-    void ConnectServer()
-    {
-        // Send confirmation to server
-        byte[] data = Encoding.ASCII.GetBytes("ClientConnected");
-        socket.SendTo(data, data.Length, SocketFlags.None, endPoint);
-
-        byte[] receivedData = new byte[1024];
-        int recv;
-
-        try
+        while (isRunning)
         {
-            recv = socket.ReceiveFrom(receivedData, ref remote);
-        }
-        catch
-        {
-            Debug.Log("Error receiving data");
-            StopConnection();
-            return; 
-        }
-
-        string message = Encoding.ASCII.GetString(receivedData, 0, recv);
-
-        if(message == "Connected")
-        {
-            startConnection = true; 
-        }
-        else
-        {
-            Debug.Log("Wrong confimation message: " + message);
-            StopConnection();
-        }
-
-    }
-
-    string GetIP()
-    {
-        var host = Dns.GetHostEntry(Dns.GetHostName());
-        foreach (var ip in host.AddressList)
-        {
-            if (ip.AddressFamily == AddressFamily.InterNetwork)
+            try
             {
-                return ip.ToString();
+                // Esperar datos del servidor
+                byte[] data = new byte[1024];
+                EndPoint remoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
+                int receivedDataLength = socket.ReceiveFrom(data, ref remoteEndPoint);
+
+                string message = System.Text.Encoding.ASCII.GetString(data, 0, receivedDataLength);
+
+                if (message == "ServerConnected")
+                {
+                    // Conexión establecida
+                    Debug.Log("Conectado al servidor.");
+                }
+                else if (message == "StartGame")
+                {
+                    startGame = true;
+                }
+            }
+            catch (SocketException ex)
+            {
+                if (ex.SocketErrorCode == SocketError.Interrupted)
+                {
+                    // El socket ha sido cerrado
+                    isRunning = false;
+                }
+                else
+                {
+                    Debug.Log("Error en el cliente: " + ex.Message);
+                    isRunning = false;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.Log("Error en el cliente: " + ex.Message);
+                isRunning = false;
             }
         }
+    }
 
-        return "";
-    }   
+    private void OnDestroy()
+    {
+        Disconnect();
+    }
+
+    public void Disconnect()
+    {
+        isRunning = false;
+
+        if (socket != null)
+        {
+            socket.Close();
+            socket = null;
+        }
+
+        if (receiveThread != null && receiveThread.IsAlive)
+        {
+            receiveThread.Join(); // Esperar a que el hilo termine
+            receiveThread = null;
+        }
+
+        Debug.Log("Cliente desconectado.");
+    }
 }

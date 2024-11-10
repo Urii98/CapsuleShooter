@@ -46,7 +46,7 @@ public class GameState : MonoBehaviour
         multiplayerState = FindObjectOfType<Multiplayer>();
         if(multiplayerState == null)
         {
-            Debug.Log("Multiplayer not found");
+            Logger.Instance.Log("Multiplayer not found");
             return;
         }
         GetPlayers();

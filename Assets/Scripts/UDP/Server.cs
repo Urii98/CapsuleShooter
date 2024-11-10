@@ -1,155 +1,149 @@
-using System.Collections;
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using UnityEngine;
-using UnityEngine.SceneManagement;
-using UnityEngine.UI;
 
 public class Server : MonoBehaviour
 {
-    Thread waitClient;
-    bool connected;
+    public int port { get; private set; }
 
-    Socket socket;
-    EndPoint remote;
-    int port;
+    private Socket socket;
+    private List<EndPoint> connectedClients = new List<EndPoint>();
+    private Thread listenThread;
+    private bool isRunning = false;
 
-    void Start()
+    public MainMenuManager mainMenuManager;
+
+    private bool enableStartButton = false;
+
+    public void StartServer()
     {
-        waitClient = new Thread(WaitClient);
-        connected = false;
+        port = 9000; // Puedes cambiar el puerto si lo deseas
+        try
+        {
+            socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            socket.Bind(new IPEndPoint(IPAddress.Any, port));
 
-        ServerSetup();
-        waitClient.Start();
+            isRunning = true;
+            listenThread = new Thread(ListenForClients);
+            listenThread.IsBackground = true;
+            listenThread.Start();
 
-        //Set port in screen
-        GameObject.Find("Port").GetComponent<Text>().text = "Port: " + port.ToString();
+            Debug.Log("Servidor iniciado en el puerto " + port);
+        }
+        catch (Exception ex)
+        {
+            Debug.Log("Error al iniciar el servidor: " + ex.Message);
+        }
     }
 
-    void ServerSetup()
+    private void Update()
     {
-        socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+        // Habilitar el botón de inicio si es necesario
+        if (enableStartButton)
+        {
+            enableStartButton = false;
+            mainMenuManager.EnableStartButton();
+        }
+    }
 
-        //Try different ports until one is free
-        port = 9000;
-        bool correctPort = false;
-
-        while (!correctPort)
+    private void ListenForClients()
+    {
+        while (isRunning)
         {
             try
             {
-                //Create IP info struct
-                IPEndPoint ipep = new IPEndPoint(IPAddress.Any, port);
+                // Esperar datos del cliente
+                byte[] data = new byte[1024];
+                EndPoint clientEndPoint = new IPEndPoint(IPAddress.Any, 0);
+                int receivedDataLength = socket.ReceiveFrom(data, ref clientEndPoint);
 
-                //Bind Socket to ONLY recieve info from the said port
-                socket.Bind(ipep);
+                string message = Encoding.ASCII.GetString(data, 0, receivedDataLength);
 
-                correctPort = true;
+                if (message == "ClientConnected")
+                {
+                    // Agregar el cliente a la lista si no está ya
+                    lock (connectedClients)
+                    {
+                        if (!connectedClients.Contains(clientEndPoint))
+                        {
+                            connectedClients.Add(clientEndPoint);
+
+                            // Si hay más de un cliente, señalamos que debemos habilitar el botón de inicio
+                            if (connectedClients.Count > 1)
+                            {
+                                enableStartButton = true;
+                            }
+                        }
+                    }
+
+                    // Enviar confirmación al cliente
+                    byte[] responseData = Encoding.ASCII.GetBytes("ServerConnected");
+                    socket.SendTo(responseData, clientEndPoint);
+                }
             }
-            catch
+            catch (SocketException ex)
             {
-                port++;
+                // Manejar excepciones de socket
+                if (ex.SocketErrorCode == SocketError.Interrupted)
+                {
+                    // El socket ha sido cerrado
+                    isRunning = false;
+                }
+                else
+                {
+                    Debug.Log("Error en el servidor: " + ex.Message);
+                    isRunning = false;
+                }
             }
-        }
-
-        //Set port 0 to send the messages
-        IPEndPoint sender = new IPEndPoint(IPAddress.Any, 0);
-        remote = (EndPoint)(sender);
-    }
-    public void StopConnection()
-    {
-        socket.Close();
-        Debug.Log("SERVER DISCONNECTED");
-    }
-
-    private void WaitClient()
-    {
-        byte[] recieveData = new byte[1024];
-        int recv;
-
-        //Recieve message
-        try
-        {
-            recv = socket.ReceiveFrom(recieveData, ref remote);
-        }
-        catch
-        {
-            Debug.Log("Server stopped listening! ");
-            StopConnection();
-            return;
-        }
-
-        //Recieved message
-        string message = Encoding.ASCII.GetString(recieveData, 0, recv);
-
-        //Incorrect message
-        if (message != "ClientConnected")
-        {
-            Debug.Log("Incorrect confirmation message: " + message);
-            StopConnection();
-            return;
-        }
-
-        //Send Confirmation Message
-        byte[] sendData = Encoding.ASCII.GetBytes("ServerConnected");
-        socket.SendTo(sendData, sendData.Length, SocketFlags.None, remote);
-
-        connected = true;
-    }
-
-    public void StopSearching()
-    {
-        waitClient.Abort();
-    }
-
-    //GAME
-    public void StartPlaying()
-    {
-        if (!connected) return;
-
-        // Transfer socket and remote to Multiplayer
-        Multiplayer ms = FindObjectOfType<Multiplayer>();
-        ms.socket = socket;
-        ms.remote = remote;
-        ms.isServer = true;
-
-        //SendStart message
-        byte[] sendData = Encoding.ASCII.GetBytes("StartGame");
-        socket.SendTo(sendData, sendData.Length, SocketFlags.None, remote);
-
-        //ChangeScene
-        ChangeScene();
-    }
-
-    void ChangeScene()
-    {
-        SceneManager.LoadScene("MainScene");
-    }
-
-    public void GetIP(Text text)
-    {
-        text.text = GetIP();
-    }
-
-    public void GetPort(Text text)
-    {
-        text.text = port.ToString();
-    }
-
-    string GetIP()
-    {
-        var host = Dns.GetHostEntry(Dns.GetHostName());
-        foreach (var ip in host.AddressList)
-        {
-            if (ip.AddressFamily == AddressFamily.InterNetwork)
+            catch (Exception ex)
             {
-                return ip.ToString();
+                Debug.Log("Error en el servidor: " + ex.Message);
+                isRunning = false;
+            }
+        }
+    }
+
+    public void StartGame()
+    {
+        // Enviar mensaje a todos los clientes para iniciar el juego
+        byte[] startGameMessage = Encoding.ASCII.GetBytes("StartGame");
+
+        lock (connectedClients)
+        {
+            foreach (EndPoint client in connectedClients)
+            {
+                socket.SendTo(startGameMessage, client);
             }
         }
 
-        return "";
+        // El servidor también recibirá este mensaje a través de su cliente interno
+    }
+
+    private void OnDestroy()
+    {
+        StopServer();
+    }
+
+    public void StopServer()
+    {
+        isRunning = false;
+
+        if (socket != null)
+        {
+            socket.Close();
+            socket = null;
+        }
+
+        if (listenThread != null && listenThread.IsAlive)
+        {
+            listenThread.Join(); // Esperar a que el hilo termine
+            listenThread = null;
+        }
+
+        Debug.Log("Servidor detenido.");
     }
 }
