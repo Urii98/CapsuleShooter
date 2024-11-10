@@ -12,9 +12,11 @@ public class MainMenuManager : MonoBehaviour
 
     public Server server;
     public Client client;
-
-    public GameObject GameManager; // Referencia al GameObject del juego
+    public GameManager gameManager; // Asignar en el Inspector
     public GameObject UIManager;
+
+    public GameObject GameManagerObject; // Referencia al GameObject del juego
+
 
     private void Start()
     {
@@ -22,11 +24,16 @@ public class MainMenuManager : MonoBehaviour
         lobbyPanel.SetActive(false); // Ocultar el lobby al inicio
         startGameButton.interactable = false; // Deshabilitar el botón de inicio al inicio
 
-        GameManager.SetActive(false); // Asegurarse de que el GameManager está desactivado al inicio
+        GameManagerObject.SetActive(false); // Asegurarse de que el GameManager está desactivado al inicio
     }
 
     public void OnCreateGameClicked()
     {
+        // Asignar el localPlayerId
+        string localPlayerId = "Player1";
+        client.localPlayerId = localPlayerId;
+        gameManager.localPlayerId = localPlayerId;
+
         // Iniciar el servidor
         server.StartServer();
 
@@ -56,19 +63,22 @@ public class MainMenuManager : MonoBehaviour
         string ip = ipInput.text;
         int port = int.Parse(portInput.text);
 
+        // Asignar el localPlayerId
+        string localPlayerId = "Player2";
+        client.localPlayerId = localPlayerId;
+        gameManager.localPlayerId = localPlayerId;
+
         // Conectarse al servidor
-        bool connected = client.ConnectToServer(ip, port);
+        client.ConnectToServer(ip, port);
 
-        if (connected)
-        {
-            // Ocultar el panel de conexión y mostrar el lobby
-            joinGamePanel.SetActive(false);
-            lobbyPanel.SetActive(true);
+        server.enabled = false;
 
-            // Actualizar el estado del lobby
-            lobbyStatusText.text = "Esperando a que el anfitrión inicie el juego...";
-        }
-      
+        // Ocultar el panel de conexión y mostrar el lobby
+        joinGamePanel.SetActive(false);
+        lobbyPanel.SetActive(true);
+
+        // Actualizar el estado del lobby
+        lobbyStatusText.text = "Esperando a que el anfitrión inicie el juego...";
     }
 
     public void OnStartGameClicked()
@@ -89,6 +99,6 @@ public class MainMenuManager : MonoBehaviour
     {
         // Desactivar el Lobby y activar el GameManager
         UIManager.SetActive(false);
-        GameManager.SetActive(true);
+        GameManagerObject.SetActive(true);
     }
 }

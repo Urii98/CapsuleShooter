@@ -1115,6 +1115,7 @@ MonoBehaviour:
   respawnTime: 3
   isMultiplayer: 1
   localPlayerId: Player1
+  client: {fileID: 1264474543}
 --- !u!4 &242375625
 Transform:
   m_ObjectHideFlags: 0
@@ -2186,8 +2187,9 @@ MonoBehaviour:
   startGameButton: {fileID: 503292764}
   server: {fileID: 1264474544}
   client: {fileID: 1264474543}
-  GameManager: {fileID: 2064327569}
+  gameManager: {fileID: 242375624}
   UIManager: {fileID: 553521144}
+  GameManagerObject: {fileID: 2064327569}
 --- !u!1 &705507993
 GameObject:
   m_ObjectHideFlags: 0
@@ -3598,6 +3600,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   mainMenuManager: {fileID: 553521150}
+  localPlayerId: Player1
+  gameManager: {fileID: 242375624}
 --- !u!114 &1264474544
 MonoBehaviour:
   m_ObjectHideFlags: 0

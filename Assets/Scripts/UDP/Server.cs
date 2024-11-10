@@ -56,15 +56,18 @@ public class Server : MonoBehaviour
         {
             try
             {
-                // Esperar datos del cliente
                 byte[] data = new byte[1024];
                 EndPoint clientEndPoint = new IPEndPoint(IPAddress.Any, 0);
                 int receivedDataLength = socket.ReceiveFrom(data, ref clientEndPoint);
 
                 string message = Encoding.ASCII.GetString(data, 0, receivedDataLength);
 
-                if (message == "ClientConnected")
+                if (message.StartsWith("ClientConnected:"))
                 {
+                    // Extraer el playerId del cliente
+                    string[] parts = message.Split(':');
+                    string playerId = parts[1];
+
                     // Agregar el cliente a la lista si no está ya
                     lock (connectedClients)
                     {
@@ -83,25 +86,35 @@ public class Server : MonoBehaviour
                     // Enviar confirmación al cliente
                     byte[] responseData = Encoding.ASCII.GetBytes("ServerConnected");
                     socket.SendTo(responseData, clientEndPoint);
+
+                    // Enviar el playerId del servidor al cliente conectado
+                    // Esto es útil para que el cliente sepa quién es el otro jugador
+                    // En este ejemplo, asumiremos que el servidor es "Player1"
                 }
+                else if (message.StartsWith("PlayerData:"))
+                {
+                    Debug.Log("Server received PlayerData from client: " + message);
+                    // Retransmit the message to all clients
+                    lock (connectedClients)
+                    {
+                        foreach (EndPoint client in connectedClients)
+                        {
+                            socket.SendTo(data, receivedDataLength, SocketFlags.None, client);
+                            Debug.Log("Server retransmitted PlayerData to client: " + client.ToString());
+                        }
+                    }
+                }
+
+
             }
             catch (SocketException ex)
             {
-                // Manejar excepciones de socket
-                if (ex.SocketErrorCode == SocketError.Interrupted)
-                {
-                    // El socket ha sido cerrado
-                    isRunning = false;
-                }
-                else
-                {
-                    Debug.Log("Error en el servidor: " + ex.Message);
-                    isRunning = false;
-                }
+                // Manejo de excepciones...
+                isRunning = false;
             }
             catch (Exception ex)
             {
-                Debug.Log("Error en el servidor: " + ex.Message);
+                // Manejo de excepciones...
                 isRunning = false;
             }
         }

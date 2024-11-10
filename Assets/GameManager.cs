@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class GameManager : MonoBehaviour
@@ -9,13 +10,16 @@ public class GameManager : MonoBehaviour
     public Level level;
 
     private Player localPlayer;
+    private Dictionary<string, Player> remotePlayers = new Dictionary<string, Player>();
 
     public UIOverlay uiOverlay;
     public float respawnTime = 3.0f;
 
     [Header("Multiplayer")]
     public bool isMultiplayer = false;
-    public string localPlayerId = "Player1"; // "Player1" o "Player2"
+    [HideInInspector] public string localPlayerId;
+
+    public Client client; // Asignar en el Inspector
 
     private void Awake()
     {
@@ -65,6 +69,9 @@ public class GameManager : MonoBehaviour
 
         // Iniciar la UI para el jugador local
         uiOverlay.StartUI(localPlayer);
+
+        // Suscribirse al evento de recepción de datos de otros jugadores
+        client.OnPlayerDataReceived += HandlePlayerDataReceived;
     }
 
     public Player SpawnPlayer(string playerId, Vector3 spawnPosition)
@@ -93,9 +100,44 @@ public class GameManager : MonoBehaviour
         }
         else
         {
-            // En este punto no hacemos nada con otros jugadores
-            // Más adelante puedes agregar lógica para manejar otros jugadores
+            // Manejar el respawn de jugadores remotos si es necesario
             yield break;
+        }
+    }
+
+    public Player GetLocalPlayer()
+    {
+        return localPlayer;
+    }
+
+    private void HandlePlayerDataReceived(string playerId, Vector3 position)
+    {
+        Debug.Log($"HandlePlayerDataReceived called for playerId: {playerId}, position: {position}");
+
+        if (playerId == localPlayerId)
+            return; // Do not update the local player
+
+        if (remotePlayers.ContainsKey(playerId))
+        {
+            // Update existing player's position
+            remotePlayers[playerId].transform.position = position;
+            Debug.Log($"Updated position of remote player {playerId}");
+        }
+        else
+        {
+            // Spawn new remote player
+            Player newPlayer = SpawnPlayer(playerId, position);
+            remotePlayers.Add(playerId, newPlayer);
+            Debug.Log($"Spawned new remote player {playerId}");
+        }
+    }
+
+
+    private void OnDestroy()
+    {
+        if (client != null)
+        {
+            client.OnPlayerDataReceived -= HandlePlayerDataReceived;
         }
     }
 }

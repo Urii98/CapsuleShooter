@@ -7,11 +7,12 @@ public class Player : DamageableObject
     public WeaponController weaponController;
 
     private Rigidbody rb;
-    private string playerId;
+    public string playerId;
     private int kills = 0;
     bool isBlocked = false;
 
     public int Kills => kills;
+
 
     [Header("Death VFX")]
     public GameObject deathVFXPrefab;
