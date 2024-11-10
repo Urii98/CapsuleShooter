@@ -8,6 +8,7 @@ public class Player : DamageableObject
 
     private string playerId;
     private int kills = 0;
+    bool isBlocked = false;
 
     public int Kills => kills;
 
@@ -44,14 +45,17 @@ public class Player : DamageableObject
     {
         float x = Input.GetAxis("Horizontal");
         float z = Input.GetAxis("Vertical");
-        Vector3 direction = new Vector3(x, 0, z).normalized;
-        transform.position += direction * speed * Time.deltaTime;
-
-        RotateTowardsMouse();
-
-        if (Input.GetMouseButton(0))
+        if (!isBlocked)
         {
-            weaponController.weapon.Shoot();
+            Vector3 direction = new Vector3(x, 0, z).normalized;
+            transform.position += direction * speed * Time.deltaTime;
+
+            RotateTowardsMouse();
+
+            if (Input.GetMouseButton(0))
+            {
+                weaponController.weapon.Shoot();
+            }
         }
     }
 
@@ -98,5 +102,10 @@ public class Player : DamageableObject
         Transform spawnPoint = GameManager.Instance.level.GetSpawnPoint(playerId);
         transform.position = spawnPoint.position;
         transform.rotation = spawnPoint.rotation;
+    }
+
+    public void BlockMovement()
+    {
+        isBlocked = true;
     }
 }
