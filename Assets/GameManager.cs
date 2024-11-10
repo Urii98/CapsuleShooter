@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 public class GameManager : MonoBehaviour
 {
@@ -20,6 +21,10 @@ public class GameManager : MonoBehaviour
     [HideInInspector] public string localPlayerId;
 
     public Client client; // Asignar en el Inspector
+
+    private bool spawn = false;
+    private string id;
+    private Vector3 pos;
 
     private void Awake()
     {
@@ -125,13 +130,24 @@ public class GameManager : MonoBehaviour
         }
         else
         {
+            spawn = true;
             // Spawn new remote player
-            Player newPlayer = SpawnPlayer(playerId, position);
-            remotePlayers.Add(playerId, newPlayer);
-            Debug.Log($"Spawned new remote player {playerId}");
+            id = playerId;
+            pos = position;
+            
         }
     }
 
+    private void Update()
+    {
+        if(spawn)
+        {
+            Player newPlayer = SpawnPlayer(id, pos);
+            remotePlayers.Add(id, newPlayer);
+            Debug.Log($"Spawned new remote player {id}");
+            spawn = false;
+        }
+    }
 
     private void OnDestroy()
     {

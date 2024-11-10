@@ -1115,7 +1115,7 @@ MonoBehaviour:
   respawnTime: 3
   isMultiplayer: 1
   localPlayerId: Player1
-  client: {fileID: 1264474543}
+  client: {fileID: 0}
 --- !u!4 &242375625
 Transform:
   m_ObjectHideFlags: 0
@@ -1861,6 +1861,18 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
+      - m_Target: {fileID: 1264474546}
+        m_TargetAssemblyTypeName: NetworkServices, Assembly-CSharp
+        m_MethodName: CreateClient
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
       - m_Target: {fileID: 553521150}
         m_TargetAssemblyTypeName: MainMenuManager, Assembly-CSharp
         m_MethodName: OnJoinGameClicked
@@ -2185,8 +2197,8 @@ MonoBehaviour:
   lobbyPanel: {fileID: 1542039350}
   lobbyStatusText: {fileID: 65611095}
   startGameButton: {fileID: 503292764}
-  server: {fileID: 1264474544}
-  client: {fileID: 1264474543}
+  server: {fileID: 0}
+  client: {fileID: 0}
   gameManager: {fileID: 242375624}
   UIManager: {fileID: 553521144}
   GameManagerObject: {fileID: 2064327569}
@@ -3160,6 +3172,30 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
+      - m_Target: {fileID: 1264474546}
+        m_TargetAssemblyTypeName: NetworkServices, Assembly-CSharp
+        m_MethodName: CreateServer
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 1264474546}
+        m_TargetAssemblyTypeName: NetworkServices, Assembly-CSharp
+        m_MethodName: CreateClient
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
       - m_Target: {fileID: 553521150}
         m_TargetAssemblyTypeName: MainMenuManager, Assembly-CSharp
         m_MethodName: OnCreateGameClicked
@@ -3578,8 +3614,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1264474545}
-  - component: {fileID: 1264474544}
-  - component: {fileID: 1264474543}
+  - component: {fileID: 1264474546}
   m_Layer: 0
   m_Name: Network
   m_TagString: Untagged
@@ -3587,34 +3622,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1264474543
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1264474542}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: cef0dcc6b834d424d82ccad2db1a5ae4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  mainMenuManager: {fileID: 553521150}
-  localPlayerId: Player1
-  gameManager: {fileID: 242375624}
---- !u!114 &1264474544
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1264474542}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4c1021afd93a7814e8ce11e787cd318a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  mainMenuManager: {fileID: 553521150}
 --- !u!4 &1264474545
 Transform:
   m_ObjectHideFlags: 0
@@ -3630,6 +3637,20 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1264474546
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1264474542}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 36f4ce69d36e91d46bd004e37a52dbc4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  server: {fileID: 8145521651217025802, guid: 433d54fbde2747f4abbeb77c680506e3, type: 3}
+  client: {fileID: 4031723400155197066, guid: cdc8806d733a3d24f94874a058e26c08, type: 3}
 --- !u!1 &1313784916
 GameObject:
   m_ObjectHideFlags: 0

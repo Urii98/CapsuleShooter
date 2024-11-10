@@ -80,7 +80,7 @@ public class Client : MonoBehaviour
             socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
 
             // Bind to an available local port (use 0 to let the OS choose)
-            socket.Bind(new IPEndPoint(IPAddress.Any, 0));
+            //socket.Bind(new IPEndPoint(IPAddress.Any, 0));
 
             serverEndPoint = new IPEndPoint(IPAddress.Parse(ip), port);
 
@@ -149,13 +149,15 @@ public class Client : MonoBehaviour
             }
             catch (SocketException ex)
             {
+                Debug.LogWarning(ex.Message);
                 // Manejo de excepciones...
-                isRunning = false;
+                //isRunning = false;
             }
             catch (Exception ex)
             {
+                Debug.LogWarning(ex.Message);
                 // Manejo de excepciones...
-                isRunning = false;
+                //isRunning = false;
             }
         }
     }
