@@ -23,8 +23,17 @@ public class Client : MonoBehaviour
     public delegate void PlayerDataReceivedHandler(string playerId, Vector3 position);
     public event PlayerDataReceivedHandler OnPlayerDataReceived;
 
-    private float sendInterval = 0.1f;
-    private float timeSinceLastSend = 0f;
+    void Start()
+    {
+        mainMenuManager = FindAnyObjectByType<MainMenuManager>();
+
+        // Try to find the GameManager instance
+        if (gameManager == null)
+        {
+            gameManager = FindObjectOfType<GameManager>(true);
+            gameManager.client = this;
+        }
+    }
 
     void Update()
     {
@@ -34,14 +43,21 @@ public class Client : MonoBehaviour
             mainMenuManager.StartGame();
         }
 
+        if (isRunning && startGame)
+        {
+            if (gameManager == null)
+            {
+                Debug.LogError("Client: gameManager is null");
+            }
+            else if (gameManager.GetLocalPlayer() == null && gameManager.gameObject.activeInHierarchy)
+            {
+                Debug.LogError("Client: GetLocalPlayer() returned null");
+            }
+        }
+
         if (isRunning && gameManager != null && gameManager.GetLocalPlayer() != null)
         {
-            timeSinceLastSend += Time.deltaTime;
-            if (timeSinceLastSend >= sendInterval)
-            {
-                SendPlayerPosition();
-                timeSinceLastSend = 0f;
-            }
+            SendPlayerPosition();
         }
     }
 
@@ -61,18 +77,20 @@ public class Client : MonoBehaviour
     {
         try
         {
-            
             socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-            socket.Bind(new IPEndPoint(IPAddress.Any, 0)); // Bind to an available local port
+
+            // Bind to an available local port (use 0 to let the OS choose)
+            socket.Bind(new IPEndPoint(IPAddress.Any, 0));
+
             serverEndPoint = new IPEndPoint(IPAddress.Parse(ip), port);
 
-            // Enviar mensaje de conexión con el playerId
+            // Send connection message
             string connectMessage = $"ClientConnected:{localPlayerId}";
             byte[] data = Encoding.ASCII.GetBytes(connectMessage);
             socket.SendTo(data, serverEndPoint);
-            Debug.Log("Enviado 'ClientConnected' al servidor.");
+            Debug.Log("Sent 'ClientConnected' to server.");
 
-            // Iniciar hilo de recepción
+            // Start receive thread
             isRunning = true;
             receiveThread = new Thread(ReceiveData);
             receiveThread.IsBackground = true;
@@ -81,10 +99,11 @@ public class Client : MonoBehaviour
         }
         catch (Exception ex)
         {
-            Debug.Log("Error al conectar al servidor: " + ex.Message);
+            Debug.Log("Error connecting to server: " + ex.Message);
             return false;
         }
     }
+
 
     private void ReceiveData()
     {
@@ -97,6 +116,8 @@ public class Client : MonoBehaviour
                 int receivedDataLength = socket.ReceiveFrom(data, ref remoteEndPoint);
 
                 string message = Encoding.ASCII.GetString(data, 0, receivedDataLength);
+
+                Debug.Log($"Client {localPlayerId} received message from {remoteEndPoint}: {message}");
 
                 if (message == "ServerConnected")
                 {

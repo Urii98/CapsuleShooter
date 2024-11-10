@@ -6,18 +6,30 @@ using System.Text;
 using System.Threading;
 using UnityEngine;
 
+public class ConnectedClient
+{
+    public string PlayerId { get; set; }
+    public EndPoint EndPoint { get; set; }
+}
+
+
 public class Server : MonoBehaviour
 {
     public int port { get; private set; }
 
     private Socket socket;
-    private List<EndPoint> connectedClients = new List<EndPoint>();
+    private List<ConnectedClient> connectedClients = new List<ConnectedClient>();
     private Thread listenThread;
     private bool isRunning = false;
 
     public MainMenuManager mainMenuManager;
 
     private bool enableStartButton = false;
+
+    private void Start()
+    {
+        mainMenuManager = FindAnyObjectByType<MainMenuManager>();
+    }
 
     public void StartServer()
     {
@@ -62,26 +74,37 @@ public class Server : MonoBehaviour
 
                 string message = Encoding.ASCII.GetString(data, 0, receivedDataLength);
 
+                Debug.Log($"Server received message from {clientEndPoint}: {message}");
+
                 if (message.StartsWith("ClientConnected:"))
                 {
                     // Extraer el playerId del cliente
                     string[] parts = message.Split(':');
                     string playerId = parts[1];
 
-                    // Agregar el cliente a la lista si no está ya
                     lock (connectedClients)
                     {
-                        if (!connectedClients.Contains(clientEndPoint))
+                        // Check if the client is already connected
+                        bool alreadyConnected = connectedClients.Exists(c => c.PlayerId == playerId);
+                        if (!alreadyConnected)
                         {
-                            connectedClients.Add(clientEndPoint);
+                            ConnectedClient newClient = new ConnectedClient
+                            {
+                                PlayerId = playerId,
+                                EndPoint = clientEndPoint
+                            };
+                            connectedClients.Add(newClient);
 
-                            // Si hay más de un cliente, señalamos que debemos habilitar el botón de inicio
+                            // Enable the start button if necessary
                             if (connectedClients.Count > 1)
                             {
                                 enableStartButton = true;
                             }
+
+                            Debug.Log($"Added new client: {playerId} from {clientEndPoint}");
                         }
                     }
+
 
                     // Enviar confirmación al cliente
                     byte[] responseData = Encoding.ASCII.GetBytes("ServerConnected");
@@ -94,13 +117,14 @@ public class Server : MonoBehaviour
                 else if (message.StartsWith("PlayerData:"))
                 {
                     Debug.Log("Server received PlayerData from client: " + message);
-                    // Retransmit the message to all clients
+
+                    // Retransmit the message to all clients, including the sender
                     lock (connectedClients)
                     {
-                        foreach (EndPoint client in connectedClients)
+                        foreach (ConnectedClient client in connectedClients)
                         {
-                            socket.SendTo(data, receivedDataLength, SocketFlags.None, client);
-                            Debug.Log("Server retransmitted PlayerData to client: " + client.ToString());
+                            socket.SendTo(data, receivedDataLength, SocketFlags.None, client.EndPoint);
+                            Debug.Log("Server retransmitted PlayerData to client: " + client.PlayerId + " at " + client.EndPoint.ToString());
                         }
                     }
                 }
@@ -127,9 +151,9 @@ public class Server : MonoBehaviour
 
         lock (connectedClients)
         {
-            foreach (EndPoint client in connectedClients)
+            foreach (ConnectedClient client in connectedClients)
             {
-                socket.SendTo(startGameMessage, client);
+                socket.SendTo(startGameMessage, client.EndPoint);
             }
         }
 

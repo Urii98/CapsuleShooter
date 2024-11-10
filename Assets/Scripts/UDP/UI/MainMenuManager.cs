@@ -29,10 +29,16 @@ public class MainMenuManager : MonoBehaviour
 
     public void OnCreateGameClicked()
     {
+        client = FindAnyObjectByType<Client>();
+        server = FindAnyObjectByType<Server>();
+
         // Asignar el localPlayerId
         string localPlayerId = "Player1";
         client.localPlayerId = localPlayerId;
         gameManager.localPlayerId = localPlayerId;
+
+        // Set isMultiplayer to true
+        gameManager.isMultiplayer = true;
 
         // Iniciar el servidor
         server.StartServer();
@@ -56,6 +62,8 @@ public class MainMenuManager : MonoBehaviour
 
     public void OnConnectButtonClicked()
     {
+        client = FindAnyObjectByType<Client>();
+
         // Obtener referencias a los InputFields
         TMP_InputField ipInput = joinGamePanel.transform.Find("IPInputField").GetComponent<TMP_InputField>();
         TMP_InputField portInput = joinGamePanel.transform.Find("PortInputField").GetComponent<TMP_InputField>();
@@ -67,6 +75,9 @@ public class MainMenuManager : MonoBehaviour
         string localPlayerId = "Player2";
         client.localPlayerId = localPlayerId;
         gameManager.localPlayerId = localPlayerId;
+
+        // Set isMultiplayer to true
+        gameManager.isMultiplayer = true;
 
         // Conectarse al servidor
         client.ConnectToServer(ip, port);
@@ -100,5 +111,7 @@ public class MainMenuManager : MonoBehaviour
         // Desactivar el Lobby y activar el GameManager
         UIManager.SetActive(false);
         GameManagerObject.SetActive(true);
+
+        client.gameManager = GameManager.Instance;
     }
 }
