@@ -13,7 +13,7 @@ public class WeaponController : MonoBehaviour
     {
         if (weapon != null)
         {
-            DestroyImmediate(weapon.gameObject);
+            Destroy(weapon.gameObject);
         }
 
         weapon = Instantiate(weaponList[Random.Range(0,2)], weaponHoldTransform.position, weaponHoldTransform.rotation, weaponHoldTransform);

@@ -6,6 +6,7 @@ public class Player : DamageableObject
     public float speed = 5;
     public WeaponController weaponController;
 
+    private Rigidbody rb;
     private string playerId;
     private int kills = 0;
     bool isBlocked = false;
@@ -13,21 +14,20 @@ public class Player : DamageableObject
     public int Kills => kills;
 
     [Header("Death VFX")]
-    public GameObject deathVFXPrefab; // Prefab del efecto visual de muerte
+    public GameObject deathVFXPrefab;
 
     public override void Start()
     {
         base.Start();
+        rb = GetComponent<Rigidbody>(); 
         weaponController = GetComponent<WeaponController>();
         weaponController.EquipWeapon();
 
-        // Suscribirse al evento de muerte
         OnObjectDied += TriggerDeathVFX;
     }
 
     private void OnDestroy()
     {
-        // Asegurarse de desuscribirse para evitar referencias nulas
         OnObjectDied -= TriggerDeathVFX;
     }
 
@@ -48,7 +48,8 @@ public class Player : DamageableObject
         if (!isBlocked)
         {
             Vector3 direction = new Vector3(x, 0, z).normalized;
-            transform.position += direction * speed * Time.deltaTime;
+            //transform.position += direction * speed * Time.deltaTime;
+            rb.MovePosition(rb.position + direction * speed * Time.deltaTime);
 
             RotateTowardsMouse();
 
