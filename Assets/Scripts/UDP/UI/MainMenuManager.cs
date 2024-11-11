@@ -78,9 +78,13 @@ public class MainMenuManager : MonoBehaviour
 
         string ip = ipInput.text;
         string portText = portInput.text;
-        int port = int.Parse(portInput.text);
+        int port = 0;
+        if(portText.Length > 0)
+        {
+            port = int.Parse(portInput.text);
+        }
 
-         if (string.IsNullOrEmpty(ip) || string.IsNullOrEmpty(portText))
+        if (string.IsNullOrEmpty(ip) || string.IsNullOrEmpty(portText))
         {
             return;
         }
