@@ -49,7 +49,7 @@ public class Player : DamageableObject
         if (!isBlocked)
         {
             Vector3 direction = new Vector3(x, 0, z).normalized;
-            //transform.position += direction * speed * Time.deltaTime;
+
             rb.MovePosition(rb.position + direction * speed * Time.deltaTime);
 
             RotateTowardsMouse();

@@ -45,11 +45,11 @@ public class Server : MonoBehaviour
             listenThread.IsBackground = true;
             listenThread.Start();
 
-            //Debug.Log("Servidor iniciado en el puerto " + port);
+            Debug.Log("Servidor iniciado en el puerto " + port);
         }
         catch (Exception ex)
         {
-            //Debug.Log("Error al iniciar el servidor: " + ex.Message);
+            Debug.Log("Error al iniciar el servidor: " + ex.Message);
         }
     }
 
@@ -106,14 +106,10 @@ public class Server : MonoBehaviour
                         }
                     }
 
-
                     // Enviar confirmación al cliente
                     byte[] responseData = Encoding.ASCII.GetBytes("ServerConnected");
                     socket.SendTo(responseData, clientEndPoint);
 
-                    // Enviar el playerId del servidor al cliente conectado
-                    // Esto es útil para que el cliente sepa quién es el otro jugador
-                    // En este ejemplo, asumiremos que el servidor es "Player1"
                 }
                 else if (message.StartsWith("PlayerData:"))
                 {
@@ -134,13 +130,11 @@ public class Server : MonoBehaviour
             }
             catch (SocketException ex)
             {
-                // Manejo de excepciones...
                 Debug.LogWarning(ex.Message);
                 isRunning = false;
             }
             catch (Exception ex)
             {
-                // Manejo de excepciones...
                 isRunning = false;
                 Debug.LogWarning(ex.Message);
             }
@@ -160,8 +154,6 @@ public class Server : MonoBehaviour
                 socket.SendTo(startGameMessage, client.EndPoint);
             }
         }
-
-        // El servidor también recibirá este mensaje a través de su cliente interno
     }
 
     private void OnDestroy()
@@ -185,6 +177,5 @@ public class Server : MonoBehaviour
             listenThread = null;
         }
 
-        //Debug.Log("Servidor detenido.");
     }
 }

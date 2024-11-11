@@ -16,13 +16,9 @@ public class Client : MonoBehaviour
     // Variables compartidas
     private bool startGame = false;
 
-    public MainMenuManager mainMenuManager; // Asignar en el Inspector
+    public MainMenuManager mainMenuManager;
     [HideInInspector] public string localPlayerId;
-    public GameManager gameManager; // Asignar en el Inspector
-
-    // Evento para notificar cuando se reciben datos de otros jugadores
-    //public delegate void PlayerDataReceivedHandler(string playerId, Vector3 position);
-    //public event PlayerDataReceivedHandler OnPlayerDataReceived;
+    public GameManager gameManager; 
 
     public delegate void PlayerDataReceivedHandler(string playerId, Vector3 position, Vector3 rotation);
     public event PlayerDataReceivedHandler OnPlayerDataReceived;
@@ -70,18 +66,6 @@ public class Client : MonoBehaviour
         }
     }
 
-    //void SendPlayerPosition()
-    //{
-    //    Player localPlayer = gameManager.GetLocalPlayer();
-    //    if (localPlayer != null)
-    //    {
-    //        Vector3 position = localPlayer.transform.position;
-    //        string message = $"PlayerData:{localPlayer.playerId}:{position.x}:{position.y}:{position.z}";
-    //        byte[] data = Encoding.ASCII.GetBytes(message);
-    //        socket.SendTo(data, serverEndPoint);
-    //    }
-    //}
-
     void SendPlayerPosition()
     {
         Player localPlayer = gameManager.GetLocalPlayer();
@@ -102,9 +86,6 @@ public class Client : MonoBehaviour
         try
         {
             socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-
-            // Bind to an available local port (use 0 to let the OS choose)
-            //socket.Bind(new IPEndPoint(IPAddress.Any, 0));
 
             serverEndPoint = new IPEndPoint(IPAddress.Parse(ip), port);
 
@@ -152,29 +133,10 @@ public class Client : MonoBehaviour
                 {
                     startGame = true;
                 }
-                //else if (message.StartsWith("PlayerData:"))
-                //{
-                //   Debug.Log("Client received PlayerData: " + message);
-
-                //    // Formato: "PlayerData:playerId:x:y:z"
-                //    string[] parts = message.Split(':');
-                //    if (parts.Length == 5)
-                //    {
-                //        string playerId = parts[1];
-                //        float x = float.Parse(parts[2]);
-                //        float y = float.Parse(parts[3]);
-                //        float z = float.Parse(parts[4]);
-                //        Vector3 position = new Vector3(x, y, z);
-
-                //        // Notificar al GameManager
-                //        OnPlayerDataReceived?.Invoke(playerId, position);
-                //    }
-                //}
                 else if (message.StartsWith("PlayerData:"))
                 {
                     Debug.Log("Client received PlayerData: " + message);
 
-                    // Formato: "PlayerData:playerId:x:y:z:rotX:rotY:rotZ"
                     string[] parts = message.Split(':');
                     if (parts.Length == 8)
                     {
@@ -197,14 +159,10 @@ public class Client : MonoBehaviour
             catch (SocketException ex)
             {
                Debug.LogWarning(ex.Message);
-                // Manejo de excepciones...
-                //isRunning = false;
             }
             catch (Exception ex)
             {
                Debug.LogWarning(ex.Message);
-                // Manejo de excepciones...
-                //isRunning = false;
             }
         }
     }

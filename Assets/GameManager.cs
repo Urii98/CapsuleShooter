@@ -21,7 +21,7 @@ public class GameManager : MonoBehaviour
     public bool isMultiplayer = false;
     [HideInInspector] public string localPlayerId;
 
-    public Client client; // Asignar en el Inspector
+    public Client client; 
 
     private bool spawn = false;
     private bool movement = false;
@@ -59,7 +59,6 @@ public class GameManager : MonoBehaviour
         Player player1 = SpawnPlayer("Player1", level.GetSpawnPoint("Player1").position);
         Player player2 = SpawnPlayer("Player2", level.GetSpawnPoint("Player2").position);
 
-        // Iniciar la UI para el jugador local
         if (localPlayerId == "Player1")
         {
             uiOverlay.StartUI(player1);
@@ -76,10 +75,8 @@ public class GameManager : MonoBehaviour
         Vector3 spawnPosition = level.GetSpawnPoint(localPlayerId).position;
         localPlayer = SpawnPlayer(localPlayerId, spawnPosition);
 
-        // Iniciar la UI para el jugador local
         uiOverlay.StartUI(localPlayer);
 
-        // Suscribirse al evento de recepción de datos de otros jugadores
         client.OnPlayerDataReceived += HandlePlayerDataReceived;
     }
 
@@ -107,43 +104,12 @@ public class GameManager : MonoBehaviour
             localPlayer = SpawnPlayer(playerId, spawnPosition);
             localPlayer.ResetPlayer();
         }
-        else
-        {
-            // Manejar el respawn de jugadores remotos si es necesario
-            yield break;
-        }
     }
 
     public Player GetLocalPlayer()
     {
         return localPlayer;
     }
-
-    //private void HandlePlayerDataReceived(string playerId, Vector3 position)
-    //{
-    //    Debug.Log($"HandlePlayerDataReceived called for playerId: {playerId}, position: {position}");
-
-    //    if (playerId == localPlayerId)
-    //        return; // Do not update the local player
-
-    //    if (remotePlayers.ContainsKey(playerId))
-    //    {
-    //        // Update existing player's position
-    //        //remotePlayers[playerId].transform.position = position;
-    //        id = playerId;
-    //        pos = position;
-    //        movement = true;
-    //        Debug.Log($"Updated position of remote player {playerId}");
-    //    }
-    //    else
-    //    {
-    //        spawn = true;
-    //        // Spawn new remote player
-    //        id = playerId;
-    //        pos = position;
-
-    //    }
-    //}
 
     private void HandlePlayerDataReceived(string playerId, Vector3 position, Vector3 rotation)
     {
@@ -155,7 +121,6 @@ public class GameManager : MonoBehaviour
         if (remotePlayers.ContainsKey(playerId))
         {
             // Update existing player's position
-            //remotePlayers[playerId].transform.position = position;
             id = playerId;
             pos = position;
             rot = rotation;
@@ -164,8 +129,8 @@ public class GameManager : MonoBehaviour
         }
         else
         {
-            spawn = true;
             // Spawn new remote player
+            spawn = true;
             id = playerId;
             pos = position;
 
