@@ -75,7 +75,7 @@ public class Server : MonoBehaviour
 
                 string message = Encoding.ASCII.GetString(data, 0, receivedDataLength);
 
-                //Debug.Log($"Server received message from {clientEndPoint}: {message}");
+                Debug.Log($"Server received message from {clientEndPoint}: {message}");
 
                 if (message.StartsWith("ClientConnected:"))
                 {
@@ -102,7 +102,7 @@ public class Server : MonoBehaviour
                                 enableStartButton = true;
                             }
 
-                            //Debug.Log($"Added new client: {playerId} from {clientEndPoint}");
+                            Debug.Log($"Added new client: {playerId} from {clientEndPoint}");
                         }
                     }
 
@@ -117,7 +117,7 @@ public class Server : MonoBehaviour
                 }
                 else if (message.StartsWith("PlayerData:"))
                 {
-                    //Debug.Log("Server received PlayerData from client: " + message);
+                    Debug.Log("Server received PlayerData from client: " + message);
 
                     // Retransmit the message to all clients, including the sender
                     lock (connectedClients)
@@ -125,7 +125,7 @@ public class Server : MonoBehaviour
                         foreach (ConnectedClient client in connectedClients)
                         {
                             socket.SendTo(data, receivedDataLength, SocketFlags.None, client.EndPoint);
-                           // Debug.Log("Server retransmitted PlayerData to client: " + client.PlayerId + " at " + client.EndPoint.ToString());
+                            Debug.Log("Server retransmitted PlayerData to client: " + client.PlayerId + " at " + client.EndPoint.ToString());
                         }
                     }
                 }
@@ -135,12 +135,14 @@ public class Server : MonoBehaviour
             catch (SocketException ex)
             {
                 // Manejo de excepciones...
+                Debug.LogWarning(ex.Message);
                 isRunning = false;
             }
             catch (Exception ex)
             {
                 // Manejo de excepciones...
                 isRunning = false;
+                Debug.LogWarning(ex.Message);
             }
         }
     }

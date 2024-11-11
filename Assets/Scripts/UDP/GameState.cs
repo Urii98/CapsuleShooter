@@ -218,7 +218,7 @@ public class GameState : MonoBehaviour
     byte[] ToBytes(PlayerState player)
     {
         string json = JsonUtility.ToJson(player);
-        //Debug.Log($"Sending JSON: {json}");  // Agregar log para inspeccionar el contenido del JSON
+        Debug.Log($"Sending JSON: {json}");  // Agregar log para inspeccionar el contenido del JSON
         return Encoding.ASCII.GetBytes(json);
     }
 

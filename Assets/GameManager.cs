@@ -24,6 +24,7 @@ public class GameManager : MonoBehaviour
     public Client client; // Asignar en el Inspector
 
     private bool spawn = false;
+    private bool movement = false;
     private string id;
     private Vector3 pos;
 
@@ -119,7 +120,7 @@ public class GameManager : MonoBehaviour
 
     private void HandlePlayerDataReceived(string playerId, Vector3 position)
     {
-        //Debug.Log($"HandlePlayerDataReceived called for playerId: {playerId}, position: {position}");
+        Debug.Log($"HandlePlayerDataReceived called for playerId: {playerId}, position: {position}");
 
         if (playerId == localPlayerId)
             return; // Do not update the local player
@@ -127,8 +128,11 @@ public class GameManager : MonoBehaviour
         if (remotePlayers.ContainsKey(playerId))
         {
             // Update existing player's position
-            remotePlayers[playerId].transform.position = position;
-            //Debug.Log($"Updated position of remote player {playerId}");
+            //remotePlayers[playerId].transform.position = position;
+            id = playerId;
+            pos = position;
+            movement = true;
+            Debug.Log($"Updated position of remote player {playerId}");
         }
         else
         {
@@ -146,8 +150,13 @@ public class GameManager : MonoBehaviour
         {
             Player newPlayer = SpawnPlayer(id, pos);
             remotePlayers.Add(id, newPlayer);
-            //Debug.Log($"Spawned new remote player {id}");
+            Debug.Log($"Spawned new remote player {id}");
             spawn = false;
+        }
+        else if(movement)
+        {
+            remotePlayers[id].transform.position = pos;
+            movement = false;
         }
     }
 

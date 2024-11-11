@@ -81,8 +81,11 @@ public class MainMenuManager : MonoBehaviour
 
         // Conectarse al servidor
         client.ConnectToServer(ip, port);
-
-        server.enabled = false;
+        
+        if(server != null)
+        {
+            server.enabled = false;
+        }
 
         // Ocultar el panel de conexión y mostrar el lobby
         joinGamePanel.SetActive(false);
