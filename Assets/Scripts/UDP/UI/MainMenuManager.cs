@@ -17,6 +17,8 @@ public class MainMenuManager : MonoBehaviour
 
     public GameObject GameManagerObject; // Referencia al GameObject del juego
 
+    [Header("Audio")]
+    public AudioSource buttonClickSound;
 
     private void Start()
     {
@@ -29,6 +31,8 @@ public class MainMenuManager : MonoBehaviour
 
     public void OnCreateGameClicked()
     {
+        buttonClickSound.Play();
+
         client = FindAnyObjectByType<Client>();
         server = FindAnyObjectByType<Server>();
 
@@ -56,12 +60,16 @@ public class MainMenuManager : MonoBehaviour
 
     public void OnJoinGameClicked()
     {
+        buttonClickSound.Play();
+
         // Mostrar el panel para introducir IP y puerto
         joinGamePanel.SetActive(true);
     }
 
     public void OnConnectButtonClicked()
     {
+        buttonClickSound.Play();
+
         client = FindAnyObjectByType<Client>();
 
         // Obtener referencias a los InputFields
@@ -69,7 +77,13 @@ public class MainMenuManager : MonoBehaviour
         TMP_InputField portInput = joinGamePanel.transform.Find("PortInputField").GetComponent<TMP_InputField>();
 
         string ip = ipInput.text;
+        string portText = portInput.text;
         int port = int.Parse(portInput.text);
+
+         if (string.IsNullOrEmpty(ip) || string.IsNullOrEmpty(portText))
+        {
+            return;
+        }
 
         // Asignar el localPlayerId
         string localPlayerId = "Player2";
@@ -97,6 +111,8 @@ public class MainMenuManager : MonoBehaviour
 
     public void OnStartGameClicked()
     {
+        buttonClickSound.Play();
+
         // Indicar al servidor que inicie el juego
         server.StartGame();
     }
