@@ -4,7 +4,6 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using UnityEngine;
-//using UnityEngine.tvOS;
 
 public class Client : MonoBehaviour
 {
