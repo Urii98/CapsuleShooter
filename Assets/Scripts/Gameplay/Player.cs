@@ -1,18 +1,37 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
+
+[RequireComponent(typeof(Rigidbody))]
 
 public class Player : DamageableObject
 {
-    public float speed = 5;
-    public WeaponController weaponController;
+    [Header("Movimiento")]
+    [SerializeField] private float velocidad = 5f;
+    [SerializeField] private float fuerzaSalto = 5f;
+    [SerializeField] private float sensibilidadRaton = 2f;
 
+    [Header("Environment")]
+    [SerializeField] private bool enSuelo = false;
+    [SerializeField] private float radioSuelo = 0.2f;
+    [SerializeField] private LayerMask capaSuelo;
+    public float distanciaRaycast = 1.1f; 
+
+    [Header("Camera Setup")]
+    // Variables de cámara
+    private Camera camara;
+    [SerializeField] private float distanciaCamara = 5f;
+    [SerializeField] private Vector3 offsetCamara = new Vector3(0, 2, -5);
+
+
+    public WeaponController weaponController;
     private Rigidbody rb;
+    private float rotacionY = 0f;
     public string playerId;
     private int kills = 0;
     bool isBlocked = false;
 
     public int Kills => kills;
-
 
     [Header("Death VFX")]
     public GameObject deathVFXPrefab;
@@ -20,11 +39,30 @@ public class Player : DamageableObject
     public override void Start()
     {
         base.Start();
-        rb = GetComponent<Rigidbody>(); 
+        PlayerSetup();
+    }
+
+    public void PlayerSetup()
+    {
+        health = totalHealth;
+
+        rb = GetComponent<Rigidbody>();
+        rb.constraints = RigidbodyConstraints.FreezeRotation;
+
         weaponController = GetComponent<WeaponController>();
         weaponController.EquipWeapon();
 
         OnObjectDied += TriggerDeathVFX;
+    }
+
+    void SetupCamara()
+    {
+
+        camara = Camera.main;
+        camara.transform.parent = this.transform;
+        camara.transform.localPosition = offsetCamara;
+        camara.transform.localRotation = Quaternion.identity;
+
     }
 
     private void OnDestroy()
@@ -44,15 +82,20 @@ public class Player : DamageableObject
 
     private void HandleInput()
     {
-        float x = Input.GetAxis("Horizontal");
-        float z = Input.GetAxis("Vertical");
+
         if (!isBlocked)
         {
-            Vector3 direction = new Vector3(x, 0, z).normalized;
+            // Rotación con el ratón
+            float movimientoRatonX = Input.GetAxis("Mouse X") * sensibilidadRaton;
+            rotacionY += movimientoRatonX;
+            transform.rotation = Quaternion.Euler(0, rotacionY, 0);
 
-            rb.MovePosition(rb.position + direction * speed * Time.deltaTime);
-
-            RotateTowardsMouse();
+            // Salto
+            if (Input.GetKeyDown(KeyCode.Space) && enSuelo)
+            {
+                rb.AddForce(Vector3.up * fuerzaSalto, ForceMode.Impulse);
+                enSuelo = false;
+            }
 
             if (Input.GetMouseButton(0))
             {
@@ -61,14 +104,28 @@ public class Player : DamageableObject
         }
     }
 
-    private void RotateTowardsMouse()
+    void FixedUpdate()
     {
-        Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-        if (Physics.Raycast(ray, out RaycastHit hitInfo))
+        
+        float movimientoX = Input.GetAxis("Horizontal");
+        float movimientoZ = Input.GetAxis("Vertical");  
+
+        Vector3 movimiento = transform.right * movimientoX + transform.forward * movimientoZ;
+        Vector3 velocidadDeseada = movimiento * velocidad;
+        Vector3 velocidadActual = rb.velocity;
+        Vector3 fuerza = velocidadDeseada - new Vector3(velocidadActual.x, 0, velocidadActual.z);
+        rb.AddForce(fuerza, ForceMode.VelocityChange);
+
+        RaycastHit hit;
+
+        Vector3 origenRaycast = transform.position + Vector3.up * 0.1f; 
+        if (Physics.Raycast(origenRaycast, Vector3.down, out hit, distanciaRaycast, capaSuelo))
         {
-            Vector3 targetPosition = hitInfo.point;
-            targetPosition.y = transform.position.y;
-            transform.LookAt(targetPosition);
+            enSuelo = true;
+        }
+        else
+        {
+            enSuelo = false;
         }
     }
 
@@ -96,6 +153,12 @@ public class Player : DamageableObject
     public void SetPlayerId(string id)
     {
         playerId = id;
+
+    }
+
+    public void SetPlayerAsLocal()
+    {
+        SetupCamara();
     }
 
     public void ResetPlayer()

@@ -150,7 +150,7 @@ Rigidbody:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5794847964816647875}
   serializedVersion: 4
-  m_Mass: 100
+  m_Mass: 1
   m_Drag: 0
   m_AngularDrag: 0
   m_CenterOfMass: {x: 0, y: 0, z: 0}
@@ -167,7 +167,7 @@ Rigidbody:
   m_UseGravity: 1
   m_IsKinematic: 0
   m_Interpolate: 0
-  m_Constraints: 84
+  m_Constraints: 80
   m_CollisionDetection: 1
 --- !u!114 &2349870952552179704
 MonoBehaviour:
@@ -183,8 +183,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   health: 0
   totalHealth: 100
-  speed: 10
+  velocidad: 5
+  fuerzaSalto: 5
+  sensibilidadRaton: 2
+  comprobacionSuelo: []
+  radioSuelo: 0.2
+  capaSuelo:
+    serializedVersion: 2
+    m_Bits: 64
+  distanciaCamara: 5
+  offsetCamara: {x: 0, y: 2, z: -5}
   weaponController: {fileID: 0}
+  playerId: 
   deathVFXPrefab: {fileID: 4593184484909914552, guid: 2e1e9506f5904a64b81744324fb7cd50, type: 3}
 --- !u!114 &8380741406189761679
 MonoBehaviour:

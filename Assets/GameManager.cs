@@ -46,26 +46,7 @@ public class GameManager : MonoBehaviour
         {
             InitializeMultiplayerGame();
         }
-        else
-        {
-            InitializeLocalGame();
-        }
         this.AddComponent<GameState>();
-    }
-
-    private void InitializeLocalGame()
-    {
-        Player player1 = SpawnPlayer("Player1", level.GetSpawnPoint("Player1").position);
-        Player player2 = SpawnPlayer("Player2", level.GetSpawnPoint("Player2").position);
-
-        if (localPlayerId == "Player1")
-        {
-            uiOverlay.StartUI(player1);
-        }
-        else
-        {
-            uiOverlay.StartUI(player2);
-        }
     }
 
     private void InitializeMultiplayerGame()
@@ -73,6 +54,7 @@ public class GameManager : MonoBehaviour
         // Solo se genera el jugador local en modo multijugador
         Vector3 spawnPosition = level.GetSpawnPoint(localPlayerId).position;
         localPlayer = SpawnPlayer(localPlayerId, spawnPosition);
+        localPlayer.SetPlayerAsLocal();
 
         uiOverlay.StartUI(localPlayer);
 
@@ -115,7 +97,13 @@ public class GameManager : MonoBehaviour
         Debug.Log($"HandlePlayerDataReceived called for playerId: {playerId}, position: {position}, rotation: {rotation}");
 
         if (playerId == localPlayerId)
+        {
             return; // Do not update the local player
+        }
+        else
+        {
+
+        }
 
         if (remotePlayers.ContainsKey(playerId))
         {
@@ -143,12 +131,31 @@ public class GameManager : MonoBehaviour
         {
             Player newPlayer = SpawnPlayer(id, pos);
             remotePlayers.Add(id, newPlayer);
+            newPlayer.PlayerSetup();
+            newPlayer.enabled = false;
+
             Debug.Log($"Spawned new remote player {id}");
             spawn = false;
         }
-        else if(movement)
+        else if (movement)
         {
-            remotePlayers[id].transform.SetPositionAndRotation(pos, Quaternion.Euler(rot));
+            Player remotePlayer = remotePlayers[id];
+            Vector3 currentPosition = remotePlayer.transform.position;
+            Quaternion currentRotation = remotePlayer.transform.rotation;
+
+            float distance = Vector3.Distance(currentPosition, pos);
+            if (distance > 0.1f)
+            {
+                remotePlayer.transform.position = Vector3.Lerp(currentPosition, pos, Time.deltaTime * 50.0f);
+            }
+
+            float angleDifference = Quaternion.Angle(currentRotation, Quaternion.Euler(rot));
+
+            if (angleDifference > 1.0f) 
+            {
+                remotePlayer.transform.rotation = Quaternion.Lerp(currentRotation, Quaternion.Euler(rot), Time.deltaTime * 50.0f);
+            }
+
             movement = false;
         }
     }
