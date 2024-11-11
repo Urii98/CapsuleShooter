@@ -21,8 +21,12 @@ public class Client : MonoBehaviour
     public GameManager gameManager; // Asignar en el Inspector
 
     // Evento para notificar cuando se reciben datos de otros jugadores
-    public delegate void PlayerDataReceivedHandler(string playerId, Vector3 position);
+    //public delegate void PlayerDataReceivedHandler(string playerId, Vector3 position);
+    //public event PlayerDataReceivedHandler OnPlayerDataReceived;
+
+    public delegate void PlayerDataReceivedHandler(string playerId, Vector3 position, Vector3 rotation);
     public event PlayerDataReceivedHandler OnPlayerDataReceived;
+
 
     void Start()
     {
@@ -66,17 +70,32 @@ public class Client : MonoBehaviour
         }
     }
 
+    //void SendPlayerPosition()
+    //{
+    //    Player localPlayer = gameManager.GetLocalPlayer();
+    //    if (localPlayer != null)
+    //    {
+    //        Vector3 position = localPlayer.transform.position;
+    //        string message = $"PlayerData:{localPlayer.playerId}:{position.x}:{position.y}:{position.z}";
+    //        byte[] data = Encoding.ASCII.GetBytes(message);
+    //        socket.SendTo(data, serverEndPoint);
+    //    }
+    //}
+
     void SendPlayerPosition()
     {
         Player localPlayer = gameManager.GetLocalPlayer();
         if (localPlayer != null)
         {
             Vector3 position = localPlayer.transform.position;
-            string message = $"PlayerData:{localPlayer.playerId}:{position.x}:{position.y}:{position.z}";
+            Vector3 rotation = localPlayer.transform.eulerAngles; 
+
+            string message = $"PlayerData:{localPlayer.playerId}:{position.x}:{position.y}:{position.z}:{rotation.x}:{rotation.y}:{rotation.z}";
             byte[] data = Encoding.ASCII.GetBytes(message);
             socket.SendTo(data, serverEndPoint);
         }
     }
+
 
     public bool ConnectToServer(string ip, int port)
     {
@@ -133,22 +152,45 @@ public class Client : MonoBehaviour
                 {
                     startGame = true;
                 }
+                //else if (message.StartsWith("PlayerData:"))
+                //{
+                //   Debug.Log("Client received PlayerData: " + message);
+
+                //    // Formato: "PlayerData:playerId:x:y:z"
+                //    string[] parts = message.Split(':');
+                //    if (parts.Length == 5)
+                //    {
+                //        string playerId = parts[1];
+                //        float x = float.Parse(parts[2]);
+                //        float y = float.Parse(parts[3]);
+                //        float z = float.Parse(parts[4]);
+                //        Vector3 position = new Vector3(x, y, z);
+
+                //        // Notificar al GameManager
+                //        OnPlayerDataReceived?.Invoke(playerId, position);
+                //    }
+                //}
                 else if (message.StartsWith("PlayerData:"))
                 {
-                   Debug.Log("Client received PlayerData: " + message);
+                    Debug.Log("Client received PlayerData: " + message);
 
-                    // Formato: "PlayerData:playerId:x:y:z"
+                    // Formato: "PlayerData:playerId:x:y:z:rotX:rotY:rotZ"
                     string[] parts = message.Split(':');
-                    if (parts.Length == 5)
+                    if (parts.Length == 8)
                     {
                         string playerId = parts[1];
                         float x = float.Parse(parts[2]);
                         float y = float.Parse(parts[3]);
                         float z = float.Parse(parts[4]);
+                        float rotX = float.Parse(parts[5]);
+                        float rotY = float.Parse(parts[6]);
+                        float rotZ = float.Parse(parts[7]);
+
                         Vector3 position = new Vector3(x, y, z);
+                        Vector3 rotation = new Vector3(rotX, rotY, rotZ);
 
                         // Notificar al GameManager
-                        OnPlayerDataReceived?.Invoke(playerId, position);
+                        OnPlayerDataReceived?.Invoke(playerId, position, rotation);
                     }
                 }
             }

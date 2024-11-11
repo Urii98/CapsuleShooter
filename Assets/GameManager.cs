@@ -27,6 +27,7 @@ public class GameManager : MonoBehaviour
     private bool movement = false;
     private string id;
     private Vector3 pos;
+    private Vector3 rot;
 
     private void Awake()
     {
@@ -118,9 +119,35 @@ public class GameManager : MonoBehaviour
         return localPlayer;
     }
 
-    private void HandlePlayerDataReceived(string playerId, Vector3 position)
+    //private void HandlePlayerDataReceived(string playerId, Vector3 position)
+    //{
+    //    Debug.Log($"HandlePlayerDataReceived called for playerId: {playerId}, position: {position}");
+
+    //    if (playerId == localPlayerId)
+    //        return; // Do not update the local player
+
+    //    if (remotePlayers.ContainsKey(playerId))
+    //    {
+    //        // Update existing player's position
+    //        //remotePlayers[playerId].transform.position = position;
+    //        id = playerId;
+    //        pos = position;
+    //        movement = true;
+    //        Debug.Log($"Updated position of remote player {playerId}");
+    //    }
+    //    else
+    //    {
+    //        spawn = true;
+    //        // Spawn new remote player
+    //        id = playerId;
+    //        pos = position;
+
+    //    }
+    //}
+
+    private void HandlePlayerDataReceived(string playerId, Vector3 position, Vector3 rotation)
     {
-        Debug.Log($"HandlePlayerDataReceived called for playerId: {playerId}, position: {position}");
+        Debug.Log($"HandlePlayerDataReceived called for playerId: {playerId}, position: {position}, rotation: {rotation}");
 
         if (playerId == localPlayerId)
             return; // Do not update the local player
@@ -131,6 +158,7 @@ public class GameManager : MonoBehaviour
             //remotePlayers[playerId].transform.position = position;
             id = playerId;
             pos = position;
+            rot = rotation;
             movement = true;
             Debug.Log($"Updated position of remote player {playerId}");
         }
@@ -140,9 +168,10 @@ public class GameManager : MonoBehaviour
             // Spawn new remote player
             id = playerId;
             pos = position;
-            
+
         }
     }
+
 
     private void Update()
     {
@@ -155,7 +184,7 @@ public class GameManager : MonoBehaviour
         }
         else if(movement)
         {
-            remotePlayers[id].transform.position = pos;
+            remotePlayers[id].transform.SetPositionAndRotation(pos, Quaternion.Euler(rot));
             movement = false;
         }
     }
