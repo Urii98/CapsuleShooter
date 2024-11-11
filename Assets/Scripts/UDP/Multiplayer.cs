@@ -6,8 +6,8 @@ using UnityEngine;
 
 public class Multiplayer : MonoBehaviour
 {
-    [HideInInspector] public Socket socket;
-    [HideInInspector] public EndPoint remote;
+    public Socket socket;
+    public EndPoint remote;
 
     public bool isServer = true;
 

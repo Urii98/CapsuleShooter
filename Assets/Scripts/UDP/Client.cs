@@ -4,6 +4,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using UnityEngine;
+//using UnityEngine.tvOS;
 
 public class Client : MonoBehaviour
 {
@@ -41,17 +42,21 @@ public class Client : MonoBehaviour
         {
             startGame = false;
             mainMenuManager.StartGame();
+            Multiplayer ms = FindObjectOfType<Multiplayer>();
+            ms.socket = socket;
+            ms.remote = serverEndPoint;
+            ms.isServer = false;
         }
 
         if (isRunning && startGame)
         {
             if (gameManager == null)
             {
-                Debug.LogError("Client: gameManager is null");
+                //Debug.LogError("Client: gameManager is null");
             }
             else if (gameManager.GetLocalPlayer() == null && gameManager.gameObject.activeInHierarchy)
             {
-                Debug.LogError("Client: GetLocalPlayer() returned null");
+                //Debug.LogError("Client: GetLocalPlayer() returned null");
             }
         }
 
@@ -88,7 +93,7 @@ public class Client : MonoBehaviour
             string connectMessage = $"ClientConnected:{localPlayerId}";
             byte[] data = Encoding.ASCII.GetBytes(connectMessage);
             socket.SendTo(data, serverEndPoint);
-            Debug.Log("Sent 'ClientConnected' to server.");
+            //Debug.Log("Sent 'ClientConnected' to server.");
 
             // Start receive thread
             isRunning = true;
@@ -99,7 +104,7 @@ public class Client : MonoBehaviour
         }
         catch (Exception ex)
         {
-            Debug.Log("Error connecting to server: " + ex.Message);
+            //Debug.Log("Error connecting to server: " + ex.Message);
             return false;
         }
     }
@@ -117,12 +122,12 @@ public class Client : MonoBehaviour
 
                 string message = Encoding.ASCII.GetString(data, 0, receivedDataLength);
 
-                Debug.Log($"Client {localPlayerId} received message from {remoteEndPoint}: {message}");
+                //Debug.Log($"Client {localPlayerId} received message from {remoteEndPoint}: {message}");
 
                 if (message == "ServerConnected")
                 {
                     // Conexión establecida
-                    Debug.Log("Conectado al servidor.");
+                    //Debug.Log("Conectado al servidor.");
                 }
                 else if (message == "StartGame")
                 {
@@ -130,7 +135,7 @@ public class Client : MonoBehaviour
                 }
                 else if (message.StartsWith("PlayerData:"))
                 {
-                    Debug.Log("Client received PlayerData: " + message);
+                    //Debug.Log("Client received PlayerData: " + message);
 
                     // Formato: "PlayerData:playerId:x:y:z"
                     string[] parts = message.Split(':');
@@ -149,13 +154,13 @@ public class Client : MonoBehaviour
             }
             catch (SocketException ex)
             {
-                Debug.LogWarning(ex.Message);
+               // Debug.LogWarning(ex.Message);
                 // Manejo de excepciones...
                 //isRunning = false;
             }
             catch (Exception ex)
             {
-                Debug.LogWarning(ex.Message);
+               // Debug.LogWarning(ex.Message);
                 // Manejo de excepciones...
                 //isRunning = false;
             }
@@ -183,6 +188,6 @@ public class Client : MonoBehaviour
             receiveThread = null;
         }
 
-        Debug.Log("Cliente desconectado, localplayerID: ." + localPlayerId);
+       // Debug.Log("Cliente desconectado, localplayerID: ." + localPlayerId);
     }
 }

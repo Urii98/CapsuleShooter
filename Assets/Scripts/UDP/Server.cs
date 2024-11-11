@@ -5,6 +5,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using UnityEngine;
+//using UnityEngine.tvOS;
 
 public class ConnectedClient
 {
@@ -44,11 +45,11 @@ public class Server : MonoBehaviour
             listenThread.IsBackground = true;
             listenThread.Start();
 
-            Debug.Log("Servidor iniciado en el puerto " + port);
+            //Debug.Log("Servidor iniciado en el puerto " + port);
         }
         catch (Exception ex)
         {
-            Debug.Log("Error al iniciar el servidor: " + ex.Message);
+            //Debug.Log("Error al iniciar el servidor: " + ex.Message);
         }
     }
 
@@ -74,7 +75,7 @@ public class Server : MonoBehaviour
 
                 string message = Encoding.ASCII.GetString(data, 0, receivedDataLength);
 
-                Debug.Log($"Server received message from {clientEndPoint}: {message}");
+                //Debug.Log($"Server received message from {clientEndPoint}: {message}");
 
                 if (message.StartsWith("ClientConnected:"))
                 {
@@ -101,7 +102,7 @@ public class Server : MonoBehaviour
                                 enableStartButton = true;
                             }
 
-                            Debug.Log($"Added new client: {playerId} from {clientEndPoint}");
+                            //Debug.Log($"Added new client: {playerId} from {clientEndPoint}");
                         }
                     }
 
@@ -116,7 +117,7 @@ public class Server : MonoBehaviour
                 }
                 else if (message.StartsWith("PlayerData:"))
                 {
-                    Debug.Log("Server received PlayerData from client: " + message);
+                    //Debug.Log("Server received PlayerData from client: " + message);
 
                     // Retransmit the message to all clients, including the sender
                     lock (connectedClients)
@@ -124,7 +125,7 @@ public class Server : MonoBehaviour
                         foreach (ConnectedClient client in connectedClients)
                         {
                             socket.SendTo(data, receivedDataLength, SocketFlags.None, client.EndPoint);
-                            Debug.Log("Server retransmitted PlayerData to client: " + client.PlayerId + " at " + client.EndPoint.ToString());
+                           // Debug.Log("Server retransmitted PlayerData to client: " + client.PlayerId + " at " + client.EndPoint.ToString());
                         }
                     }
                 }
@@ -147,6 +148,7 @@ public class Server : MonoBehaviour
     public void StartGame()
     {
         // Enviar mensaje a todos los clientes para iniciar el juego
+
         byte[] startGameMessage = Encoding.ASCII.GetBytes("StartGame");
 
         lock (connectedClients)
@@ -181,6 +183,6 @@ public class Server : MonoBehaviour
             listenThread = null;
         }
 
-        Debug.Log("Servidor detenido.");
+        //Debug.Log("Servidor detenido.");
     }
 }
