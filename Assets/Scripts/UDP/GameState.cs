@@ -8,28 +8,7 @@ using UnityEngine.SceneManagement;
 using Unity.VisualScripting;
 using System;
 
-public enum Events
-{
-    SHOOT,
-    KILL,
-    DISCONNECT,
-    PAUSE,
-    UNPAUSE,
-    RESET,
-    HEAL,
-    NUMEVENTS
-}
 
-public struct PlayerState
-{
-    public float time; 
-    public Vector3 position;
-    public Quaternion rotation;
-    public float health;
-    public string playerID;
-    public int kills; 
-    //public List<Events> events;
-}
 public class GameState : MonoBehaviour
 {
     const int MESSAGE_SIZE = 1024;
@@ -103,8 +82,8 @@ public class GameState : MonoBehaviour
     void UpdateState()
     {
         // Rellenar con cada uno de los estados, incluyendo los de los scripts de los jugadores
-        otherPlayer.gameObject.transform.position = otherState.position;
-        otherPlayer.gameObject.transform.rotation = otherState.rotation;
+        otherPlayer.gameObject.transform.position = otherState.pos;
+        //otherPlayer.gameObject.transform.rotation = otherState.rot;
 
         //foreach(Events e in otherState.events)
         //{
@@ -167,12 +146,11 @@ public class GameState : MonoBehaviour
         Player playerComponent = myPlayer.GetComponent<Player>();
         PlayerState state = new PlayerState
         {
-            time = Time.time,
-            position = myPlayer.gameObject.transform.position,
-            rotation = myPlayer.gameObject.transform.rotation,
-            health = playerComponent.health,
-            playerID = playerComponent.playerId,
-            kills = playerComponent.Kills,
+            //pos = myPlayer.gameObject.transform.position,
+            //rot = myPlayer.gameObject.transform.rotation,
+            //health = playerComponent.health,
+            //playerID = playerComponent.playerId,
+            //kills = playerComponent.Kills,
             //events = events,
         };
 
@@ -181,37 +159,37 @@ public class GameState : MonoBehaviour
         
     void RecieveState()
     {
-        while (true)
-        {
-            byte[] data = new byte[MESSAGE_SIZE];
-            int recv = 0;
+        //while (true)
+        //{
+        //    byte[] data = new byte[MESSAGE_SIZE];
+        //    int recv = 0;
 
-            try
-            {
-                recv = multiplayerState.socket.ReceiveFrom(data, ref multiplayerState.remote);
-            }
-            catch
-            {
-                return;
-            }
-            string checkMessage = Encoding.ASCII.GetString(data, 0, recv);
-            if(!checkMessage.StartsWith("PlayerData:"))
-                Debug.Log(checkMessage);
-            if(checkMessage.StartsWith("time"))
-            {
-                PlayerState message = FromBytes(data, recv);
-                if (message.time > otherState.time)
-                {
-                    otherState = message;
-                    updated = true;
-                }
-                //else if(message.events.Count > 0)
-                //{
-                //    otherState.events = message.events;
-                //    updated = true;
-                //}
-            }
-        }
+        //    try
+        //    {
+        //        recv = multiplayerState.socket.ReceiveFrom(data, ref multiplayerState.remote);
+        //    }
+        //    catch
+        //    {
+        //        return;
+        //    }
+        //    string checkMessage = Encoding.ASCII.GetString(data, 0, recv);
+        //    if(!checkMessage.StartsWith("PlayerData:"))
+        //        Debug.Log(checkMessage);
+        //    if(checkMessage.StartsWith("time"))
+        //    {
+        //        PlayerState message = FromBytes(data, recv);
+        //        if (message.time > otherState.time)
+        //        {
+        //            otherState = message;
+        //            updated = true;
+        //        }
+        //        //else if(message.events.Count > 0)
+        //        //{
+        //        //    otherState.events = message.events;
+        //        //    updated = true;
+        //        //}
+        //    }
+        //}
     }
 
     // SERIALIZATION

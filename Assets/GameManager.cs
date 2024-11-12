@@ -1,8 +1,30 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Text;
 using Unity.VisualScripting;
 using UnityEngine;
 
+public enum Events
+{
+    SHOOT,
+    KILL,
+    DISCONNECT,
+    PAUSE,
+    UNPAUSE,
+    RESET,
+    HEAL,
+    NUMEVENTS
+}
+public struct PlayerState
+{
+    public string id;
+    public Vector3 pos;
+    public Vector3 rot;
+    public float health;
+    public int kills;
+    //public List<Events> events;
+}
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
@@ -24,9 +46,11 @@ public class GameManager : MonoBehaviour
 
     private bool spawn = false;
     private bool movement = false;
-    private string id;
-    private Vector3 pos;
-    private Vector3 rot;
+    //private string id;
+    //private Vector3 pos;
+    //private Vector3 rot;
+
+    PlayerState otherState; 
 
     private void Awake()
     {
@@ -107,9 +131,9 @@ public class GameManager : MonoBehaviour
         if (remotePlayers.ContainsKey(playerId))
         {
             // Update existing player's position
-            id = playerId;
-            pos = position;
-            rot = rotation;
+            otherState.id = playerId;
+            otherState.pos = position;
+            otherState.rot = rotation;
             movement = true;
             Debug.Log($"Updated position of remote player {playerId}");
         }
@@ -117,8 +141,8 @@ public class GameManager : MonoBehaviour
         {
             // Spawn new remote player
             spawn = true;
-            id = playerId;
-            pos = position;
+            otherState.id = playerId;
+            otherState.pos = position;
 
         }
     }
@@ -128,31 +152,31 @@ public class GameManager : MonoBehaviour
     {
         if(spawn)
         {
-            Player newPlayer = SpawnPlayer(id, pos);
-            remotePlayers.Add(id, newPlayer);
+            Player newPlayer = SpawnPlayer(otherState.id, otherState.pos);
+            remotePlayers.Add(otherState.id, newPlayer);
             newPlayer.PlayerSetup();
             newPlayer.enabled = false;
 
-            Debug.Log($"Spawned new remote player {id}");
+            Debug.Log($"Spawned new remote player {otherState.id}");
             spawn = false;
         }
         else if (movement)
         {
-            Player remotePlayer = remotePlayers[id];
+            Player remotePlayer = remotePlayers[otherState.id];
             Vector3 currentPosition = remotePlayer.transform.position;
             Quaternion currentRotation = remotePlayer.transform.rotation;
 
-            float distance = Vector3.Distance(currentPosition, pos);
+            float distance = Vector3.Distance(currentPosition, otherState.pos);
             if (distance > 0.1f)
             {
-                remotePlayer.transform.position = Vector3.Lerp(currentPosition, pos, Time.deltaTime * 50.0f);
+                remotePlayer.transform.position = Vector3.Lerp(currentPosition, otherState.pos, Time.deltaTime * 50.0f);
             }
 
-            float angleDifference = Quaternion.Angle(currentRotation, Quaternion.Euler(rot));
+            float angleDifference = Quaternion.Angle(currentRotation, Quaternion.Euler(otherState.rot));
 
             if (angleDifference > 1.0f) 
             {
-                remotePlayer.transform.rotation = Quaternion.Lerp(currentRotation, Quaternion.Euler(rot), Time.deltaTime * 50.0f);
+                remotePlayer.transform.rotation = Quaternion.Lerp(currentRotation, Quaternion.Euler(otherState.rot), Time.deltaTime * 50.0f);
             }
 
             movement = false;
@@ -165,5 +189,48 @@ public class GameManager : MonoBehaviour
         {
             client.OnPlayerDataReceived -= HandlePlayerDataReceived;
         }
+    }
+
+    // JSON utility
+    public byte[] ToBytes(PlayerState player)
+    {
+        string json = "PlayerData:" + JsonUtility.ToJson(player);
+        Debug.Log($"Sending JSON: {json}");  // Agregar log para inspeccionar el contenido del JSON
+        return Encoding.ASCII.GetBytes(json);
+    }
+
+    public PlayerState FromBytes(byte[] data, int size)
+    {
+        string json = Encoding.ASCII.GetString(data, 0, size);
+        Debug.Log($"Received JSON: {json}");  // Agregar log para inspeccionar el contenido del JSON
+        if (json.StartsWith("PlayerData:"))
+        {
+            json = json.Substring("PlayerData:".Length);
+        }
+
+        try
+        {
+            return JsonUtility.FromJson<PlayerState>(json);
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"Error parsing JSON: {e.Message}");
+            return default;
+        }
+    }
+
+    // Player to PlayerState
+    public PlayerState GetMyState(Player myPlayer)
+    {
+        PlayerState state = new PlayerState
+        {
+            pos = myPlayer.gameObject.transform.position,
+            rot = myPlayer.gameObject.transform.eulerAngles,
+            health = myPlayer.health,
+            id = myPlayer.playerId,
+            kills = myPlayer.Kills,
+            //events = events,
+        };
+        return state;
     }
 }

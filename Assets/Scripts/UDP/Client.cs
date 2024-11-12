@@ -66,11 +66,13 @@ public class Client : MonoBehaviour
         Player localPlayer = gameManager.GetLocalPlayer();
         if (localPlayer != null)
         {
-            Vector3 position = localPlayer.transform.position;
-            Vector3 rotation = localPlayer.transform.eulerAngles; 
+            PlayerState state = gameManager.GetMyState(localPlayer);
+            byte[] data = gameManager.ToBytes(state);
+            //Vector3 position = localPlayer.transform.position;
+            //Vector3 rotation = localPlayer.transform.eulerAngles; 
 
-            string message = $"PlayerData:{localPlayer.playerId}:{position.x}:{position.y}:{position.z}:{rotation.x}:{rotation.y}:{rotation.z}";
-            byte[] data = Encoding.ASCII.GetBytes(message);
+            //string message = $"PlayerData:{localPlayer.playerId}:{position.x}:{position.y}:{position.z}:{rotation.x}:{rotation.y}:{rotation.z}";
+            //byte[] data = Encoding.ASCII.GetBytes(message);
             socket.SendTo(data, serverEndPoint);
         }
     }
@@ -132,23 +134,25 @@ public class Client : MonoBehaviour
                 {
                     Debug.Log("Client received PlayerData: " + message);
 
-                    string[] parts = message.Split(':');
-                    if (parts.Length == 8)
-                    {
-                        string playerId = parts[1];
-                        float x = float.Parse(parts[2]);
-                        float y = float.Parse(parts[3]);
-                        float z = float.Parse(parts[4]);
-                        float rotX = float.Parse(parts[5]);
-                        float rotY = float.Parse(parts[6]);
-                        float rotZ = float.Parse(parts[7]);
+                    //string[] parts = message.Split(':');
+                    //if (parts.Length == 8)
+                    //{
+                    //    string playerId = parts[1];
+                    //    float x = float.Parse(parts[2]);
+                    //    float y = float.Parse(parts[3]);
+                    //    float z = float.Parse(parts[4]);
+                    //    float rotX = float.Parse(parts[5]);
+                    //    float rotY = float.Parse(parts[6]);
+                    //    float rotZ = float.Parse(parts[7]);
 
-                        Vector3 position = new Vector3(x, y, z);
-                        Vector3 rotation = new Vector3(rotX, rotY, rotZ);
+                    //    Vector3 position = new Vector3(x, y, z);
+                    //    Vector3 rotation = new Vector3(rotX, rotY, rotZ);
 
-                        // Notificar al GameManager
-                        OnPlayerDataReceived?.Invoke(playerId, position, rotation);
-                    }
+                    //    // Notificar al GameManager
+                    //    OnPlayerDataReceived?.Invoke(playerId, position, rotation);
+                    //}
+                    PlayerState playerState = gameManager.FromBytes(data, receivedDataLength);
+                    OnPlayerDataReceived?.Invoke(playerState.id, playerState.pos, playerState.rot);
                 }
             }
             catch (SocketException ex)
