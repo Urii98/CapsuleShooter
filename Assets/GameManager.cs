@@ -46,7 +46,6 @@ public class GameManager : MonoBehaviour
         {
             InitializeMultiplayerGame();
         }
-        this.AddComponent<GameState>();
     }
 
     private void InitializeMultiplayerGame()

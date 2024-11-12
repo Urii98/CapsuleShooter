@@ -59,7 +59,7 @@ public class GameState : MonoBehaviour
         events = new List<Events>();
 
         StartCoroutine(InitializePlayers());
-        DataTransfer();
+        //DataTransfer();
     }
 
     IEnumerator InitializePlayers()

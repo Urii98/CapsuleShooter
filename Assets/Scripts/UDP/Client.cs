@@ -41,10 +41,6 @@ public class Client : MonoBehaviour
         {
             startGame = false;
             mainMenuManager.StartGame();
-            Multiplayer ms = FindObjectOfType<Multiplayer>();
-            ms.socket = socket;
-            ms.remote = serverEndPoint;
-            ms.isServer = false;
         }
 
         if (isRunning && startGame)

@@ -30,7 +30,6 @@ public class Bullet : MonoBehaviour
         DamageableObject target = collision.collider.GetComponent<DamageableObject>();
         if (target != null)
         {
-            FindObjectOfType<GameState>().SendEvent(Events.SHOOT);
             target.TakeDamage(damage);
             Debug.Log($"Impacto reportado: {shooterId}");
         }
