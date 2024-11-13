@@ -64,6 +64,12 @@ public class MainMenuManager : MonoBehaviour
 
         // Mostrar el panel para introducir IP y puerto
         joinGamePanel.SetActive(true);
+
+        // Obtener referencias a los InputFields para introducir valores por defecto (localhost)
+        TMP_InputField ipInput = joinGamePanel.transform.Find("IPInputField").GetComponent<TMP_InputField>();
+        TMP_InputField portInput = joinGamePanel.transform.Find("PortInputField").GetComponent<TMP_InputField>();
+        ipInput.text = "127.0.0.1";
+        portInput.text = "9000";
     }
 
     public void OnConnectButtonClicked()
