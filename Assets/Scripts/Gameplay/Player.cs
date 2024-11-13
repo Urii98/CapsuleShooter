@@ -36,10 +36,13 @@ public class Player : DamageableObject
     [Header("Death VFX")]
     public GameObject deathVFXPrefab;
 
+    GameManager gameManager; 
+
     public override void Start()
     {
         base.Start();
         PlayerSetup();
+        gameManager = FindObjectOfType<GameManager>();
     }
 
     public void PlayerSetup()
@@ -99,6 +102,7 @@ public class Player : DamageableObject
 
             if (Input.GetMouseButton(0))
             {
+                gameManager.SendEvent(Events.SHOOT);
                 weaponController.weapon.Shoot();
             }
         }

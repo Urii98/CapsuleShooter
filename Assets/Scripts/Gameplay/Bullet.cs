@@ -19,7 +19,7 @@ public class Bullet : MonoBehaviour
     private void Start()
     {
         rb.velocity = transform.forward * speed;
-    }
+    }   
     public void Initialize(string shooter)
     {
         shooterId = shooter;

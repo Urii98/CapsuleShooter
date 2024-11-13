@@ -23,7 +23,7 @@ public struct PlayerState
     public Vector3 rot;
     public float health;
     public int kills;
-    //public List<Events> events;
+    public List<Events> events;
 }
 public class GameManager : MonoBehaviour
 {
@@ -41,11 +41,13 @@ public class GameManager : MonoBehaviour
     [Header("Multiplayer")]
     public bool isMultiplayer = false;
     [HideInInspector] public string localPlayerId;
+    [HideInInspector] public List<Events> events; 
 
     public Client client; 
 
     private bool spawn = false;
     private bool movement = false;
+    private bool hasEvents = false;
     //private string id;
     //private Vector3 pos;
     //private Vector3 rot;
@@ -115,11 +117,11 @@ public class GameManager : MonoBehaviour
         return localPlayer;
     }
 
-    private void HandlePlayerDataReceived(string playerId, Vector3 position, Vector3 rotation)
+    private void HandlePlayerDataReceived(PlayerState state)
     {
-        Debug.Log($"HandlePlayerDataReceived called for playerId: {playerId}, position: {position}, rotation: {rotation}");
+        Debug.Log($"HandlePlayerDataReceived called for playerId: {state.id}, position: {state.pos}, rotation: {state.rot}");
 
-        if (playerId == localPlayerId)
+        if (state.id == localPlayerId)
         {
             return; // Do not update the local player
         }
@@ -128,21 +130,27 @@ public class GameManager : MonoBehaviour
 
         }
 
-        if (remotePlayers.ContainsKey(playerId))
+        if (remotePlayers.ContainsKey(state.id))
         {
             // Update existing player's position
-            otherState.id = playerId;
-            otherState.pos = position;
-            otherState.rot = rotation;
+            otherState.id = state.id;
+            otherState.pos = state.pos;
+            otherState.rot = state.rot;
+            if(state.events != null)
+            {
+                otherState.events = state.events;
+                hasEvents = true;
+            }
+           
             movement = true;
-            Debug.Log($"Updated position of remote player {playerId}");
+            Debug.Log($"Updated position of remote player {state.id}");
         }
         else
         {
             // Spawn new remote player
             spawn = true;
-            otherState.id = playerId;
-            otherState.pos = position;
+            otherState.id = state.id;
+            otherState.pos = state.pos;
 
         }
     }
@@ -179,7 +187,48 @@ public class GameManager : MonoBehaviour
                 remotePlayer.transform.rotation = Quaternion.Lerp(currentRotation, Quaternion.Euler(otherState.rot), Time.deltaTime * 50.0f);
             }
 
+            if (hasEvents)
+            {
+                UpdateEvents();
+                hasEvents = false;
+            }
+                
+
             movement = false;
+        }
+    }
+    private void UpdateEvents()
+    {
+        Player remotePlayer = remotePlayers[otherState.id];
+        foreach (Events e in otherState.events)
+        {
+            switch (e)
+            {
+                case Events.KILL:
+                    remotePlayers[otherState.id].AddKill();
+                    break;
+                case Events.HEAL:
+                    remotePlayers[otherState.id].Heal(20);
+                    break;
+                case Events.DISCONNECT:
+                    //HandleDisconnect;
+                    break; 
+                case Events.PAUSE:
+                    //HandlePause;
+                    break;
+                case Events.UNPAUSE:
+                    //HandleUnpause;
+                    break;
+                case Events.RESET:
+                    //HandleReset;
+                    break;
+                case Events.SHOOT:
+                    if(otherState.id != localPlayer.playerId)
+                    {
+                        remotePlayer.weaponController.weapon.Shoot();
+                    }
+                    break;
+            }
         }
     }
 
@@ -229,8 +278,13 @@ public class GameManager : MonoBehaviour
             health = myPlayer.health,
             id = myPlayer.playerId,
             kills = myPlayer.Kills,
-            //events = events,
+            events = events,
         };
         return state;
+    }
+
+    public void SendEvent(Events e)
+    {
+        events.Add(e);
     }
 }

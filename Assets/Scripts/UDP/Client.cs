@@ -19,7 +19,7 @@ public class Client : MonoBehaviour
     [HideInInspector] public string localPlayerId;
     public GameManager gameManager; 
 
-    public delegate void PlayerDataReceivedHandler(string playerId, Vector3 position, Vector3 rotation);
+    public delegate void PlayerDataReceivedHandler(PlayerState recievedState);
     public event PlayerDataReceivedHandler OnPlayerDataReceived;
 
 
@@ -74,6 +74,9 @@ public class Client : MonoBehaviour
             //string message = $"PlayerData:{localPlayer.playerId}:{position.x}:{position.y}:{position.z}:{rotation.x}:{rotation.y}:{rotation.z}";
             //byte[] data = Encoding.ASCII.GetBytes(message);
             socket.SendTo(data, serverEndPoint);
+
+            //After sending the info, clear the events so they are not sent again
+            gameManager.events.Clear();
         }
     }
 
@@ -152,7 +155,7 @@ public class Client : MonoBehaviour
                     //    OnPlayerDataReceived?.Invoke(playerId, position, rotation);
                     //}
                     PlayerState playerState = gameManager.FromBytes(data, receivedDataLength);
-                    OnPlayerDataReceived?.Invoke(playerState.id, playerState.pos, playerState.rot);
+                    OnPlayerDataReceived?.Invoke(playerState);
                 }
             }
             catch (SocketException ex)
