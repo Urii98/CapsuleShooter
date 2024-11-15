@@ -2,8 +2,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-[RequireComponent(typeof(Rigidbody))]
-
 public class Player : DamageableObject
 {
     [Header("Movimiento")]
@@ -15,17 +13,15 @@ public class Player : DamageableObject
     [SerializeField] private bool enSuelo = false;
     [SerializeField] private float radioSuelo = 0.2f;
     [SerializeField] private LayerMask capaSuelo;
-    public float distanciaRaycast = 1.1f; 
+    public float distanciaRaycast = 1.1f;
 
     [Header("Camera Setup")]
-    // Variables de cámara
     private Camera camara;
-    [SerializeField] private float distanciaCamara = 5f;
     [SerializeField] private Vector3 offsetCamara = new Vector3(0, 2, -5);
 
-
     public WeaponController weaponController;
-    private Rigidbody rb;
+    [SerializeField] private Rigidbody rb;
+    private Animator animator; 
     private float rotacionY = 0f;
     public string playerId;
     private int kills = 0;
@@ -36,7 +32,7 @@ public class Player : DamageableObject
     [Header("Death VFX")]
     public GameObject deathVFXPrefab;
 
-    GameManager gameManager; 
+    GameManager gameManager;
 
     public override void Start()
     {
@@ -55,22 +51,9 @@ public class Player : DamageableObject
         weaponController = GetComponent<WeaponController>();
         weaponController.EquipWeapon();
 
+        animator = GetComponent<Animator>(); 
+
         OnObjectDied += TriggerDeathVFX;
-    }
-
-    void SetupCamara()
-    {
-
-        camara = Camera.main;
-        camara.transform.parent = this.transform;
-        camara.transform.localPosition = offsetCamara;
-        camara.transform.localRotation = Quaternion.identity;
-
-    }
-
-    private void OnDestroy()
-    {
-        OnObjectDied -= TriggerDeathVFX;
     }
 
     private void Update()
@@ -81,11 +64,11 @@ public class Player : DamageableObject
         }
 
         HandleInput();
+        UpdateAnimatorParameters();
     }
 
     private void HandleInput()
     {
-
         if (!isBlocked)
         {
             // Rotación con el ratón
@@ -98,6 +81,7 @@ public class Player : DamageableObject
             {
                 rb.AddForce(Vector3.up * fuerzaSalto, ForceMode.Impulse);
                 enSuelo = false;
+                animator.SetBool("IsJumping", true); 
             }
 
             if (Input.GetMouseButton(0))
@@ -108,11 +92,10 @@ public class Player : DamageableObject
         }
     }
 
-    void FixedUpdate()
+    private void FixedUpdate()
     {
-        
         float movimientoX = Input.GetAxis("Horizontal");
-        float movimientoZ = Input.GetAxis("Vertical");  
+        float movimientoZ = Input.GetAxis("Vertical");
 
         Vector3 movimiento = transform.right * movimientoX + transform.forward * movimientoZ;
         Vector3 velocidadDeseada = movimiento * velocidad;
@@ -121,16 +104,24 @@ public class Player : DamageableObject
         rb.AddForce(fuerza, ForceMode.VelocityChange);
 
         RaycastHit hit;
-
-        Vector3 origenRaycast = transform.position + Vector3.up * 0.1f; 
+        Vector3 origenRaycast = transform.position + Vector3.up * 0.1f;
         if (Physics.Raycast(origenRaycast, Vector3.down, out hit, distanciaRaycast, capaSuelo))
         {
             enSuelo = true;
+            animator.SetBool("IsJumping", false); 
         }
         else
         {
             enSuelo = false;
         }
+    }
+
+    private void UpdateAnimatorParameters()
+    {
+        float movimientoX = Input.GetAxis("Horizontal");
+        float movimientoZ = Input.GetAxis("Vertical");
+        float velocidadActual = new Vector3(movimientoX, 0, movimientoZ).magnitude;
+        animator.SetFloat("Speed", velocidadActual);
     }
 
     private void TriggerDeathVFX()
@@ -144,10 +135,9 @@ public class Player : DamageableObject
 
     public void Heal(float amount)
     {
-        health = Mathf.Min(health + amount, totalHealth); 
+        health = Mathf.Min(health + amount, totalHealth);
         Debug.Log($"{playerId} healed by {amount}. Current health: {health}");
     }
-
 
     public void AddKill()
     {
@@ -157,7 +147,6 @@ public class Player : DamageableObject
     public void SetPlayerId(string id)
     {
         playerId = id;
-
     }
 
     public void SetPlayerAsLocal()
@@ -165,6 +154,15 @@ public class Player : DamageableObject
         SetupCamara();
     }
 
+    void SetupCamara()
+    {
+
+        camara = Camera.main;
+        camara.transform.parent = this.transform;
+        camara.transform.localPosition = offsetCamara;
+        camara.transform.localRotation = Quaternion.identity;
+
+    }
     public void ResetPlayer()
     {
         health = totalHealth;
