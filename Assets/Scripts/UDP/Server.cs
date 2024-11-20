@@ -33,7 +33,7 @@ public class Server : MonoBehaviour
 
     public void StartServer()
     {
-        port = 9000; // Puedes cambiar el puerto si lo deseas
+        port = 9000; 
         try
         {
             socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
@@ -54,7 +54,6 @@ public class Server : MonoBehaviour
 
     private void Update()
     {
-        // Habilitar el botón de inicio si es necesario
         if (enableStartButton)
         {
             enableStartButton = false;
@@ -78,7 +77,7 @@ public class Server : MonoBehaviour
 
                 if (message.StartsWith("ClientConnected:"))
                 {
-                    // Extraer el playerId del cliente
+                    // Extract playerId from client
                     string[] parts = message.Split(':');
                     string playerId = parts[1];
 
@@ -142,7 +141,7 @@ public class Server : MonoBehaviour
 
     public void StartGame()
     {
-        // Enviar mensaje a todos los clientes para iniciar el juego
+        // Send message to all clients so game starts
 
         byte[] startGameMessage = Encoding.ASCII.GetBytes("StartGame");
 
@@ -172,7 +171,7 @@ public class Server : MonoBehaviour
 
         if (listenThread != null && listenThread.IsAlive)
         {
-            listenThread.Join(); // Esperar a que el hilo termine
+            listenThread.Join(); 
             listenThread = null;
         }
 

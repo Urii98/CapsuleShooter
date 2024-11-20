@@ -1029,6 +1029,7 @@ GameObject:
   - component: {fileID: 210121910}
   - component: {fileID: 210121912}
   - component: {fileID: 210121913}
+  - component: {fileID: 210121914}
   m_Layer: 5
   m_Name: Banner
   m_TagString: Untagged
@@ -1204,6 +1205,18 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!225 &210121914
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 210121908}
+  m_Enabled: 1
+  m_Alpha: 0
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1001 &226028256
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1295,7 +1308,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cb4a9a729be26b8468fd1b747a12a223, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerPrefab: {fileID: 2349870952552179704, guid: 6d185b1e5be854b43a7455bf3d711f07, type: 3}
+  playerPrefab: {fileID: 3149608962574040938, guid: 489ffdb0faa53e6419548067140238c2, type: 3}
   level: {fileID: 5605592631045878560}
   uiOverlay: {fileID: 1071646990}
   respawnTime: 3
@@ -2610,6 +2623,7 @@ MonoBehaviour:
   mainMenuPanel: {fileID: 1338689274}
   joinGamePanel: {fileID: 768156851}
   lobbyPanel: {fileID: 1542039350}
+  lobbyDecoration: {fileID: 1808430499}
   lobbyStatusText: {fileID: 65611095}
   startGameButton: {fileID: 503292764}
   server: {fileID: 0}
@@ -4463,8 +4477,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1013654367}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -2.4000003, y: -0.654, z: 2.19}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -579.3158, y: -277.60675, z: 1.9714149}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -4509,7 +4523,7 @@ Transform:
   - {fileID: 1421678998}
   - {fileID: 915743171}
   - {fileID: 1223790873}
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 1808430500}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1029689356
 PrefabInstance:
@@ -7530,6 +7544,39 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1790621443}
   m_CullTransparentMesh: 1
+--- !u!1 &1808430499
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1808430500}
+  m_Layer: 0
+  m_Name: Lobby
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1808430500
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1808430499}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 576.9158, y: 276.95276, z: 0.21858513}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 7647473417292150058}
+  - {fileID: 1013654368}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1817109728
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -10622,7 +10669,7 @@ Transform:
   m_GameObject: {fileID: 7019590243292589968}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0.519, y: -0.45, z: 2.6350002}
+  m_LocalPosition: {x: -577.43475, y: -277.40277, z: 2.4164152}
   m_LocalScale: {x: 1.25, y: 1.25, z: 1.25}
   m_ConstrainProportionsScale: 1
   m_Children:
@@ -10632,7 +10679,7 @@ Transform:
   - {fileID: 2883725845500937957}
   - {fileID: 2677998777375399974}
   - {fileID: 370690065621255739}
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 1808430500}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &7647473417292150059
 MonoBehaviour:
@@ -11188,5 +11235,4 @@ SceneRoots:
   - {fileID: 2237977}
   - {fileID: 2064327570}
   - {fileID: 1264474545}
-  - {fileID: 7647473417292150058}
-  - {fileID: 1013654368}
+  - {fileID: 1808430500}

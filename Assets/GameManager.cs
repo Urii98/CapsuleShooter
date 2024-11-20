@@ -48,9 +48,6 @@ public class GameManager : MonoBehaviour
     private bool spawn = false;
     private bool movement = false;
     private bool hasEvents = false;
-    //private string id;
-    //private Vector3 pos;
-    //private Vector3 rot;
 
     PlayerState otherState; 
 
@@ -76,7 +73,7 @@ public class GameManager : MonoBehaviour
 
     private void InitializeMultiplayerGame()
     {
-        // Solo se genera el jugador local en modo multijugador
+        
         Vector3 spawnPosition = level.GetSpawnPoint(localPlayerId).position;
         localPlayer = SpawnPlayer(localPlayerId, spawnPosition);
         localPlayer.SetPlayerAsLocal();
@@ -244,14 +241,14 @@ public class GameManager : MonoBehaviour
     public byte[] ToBytes(PlayerState player)
     {
         string json = "PlayerData:" + JsonUtility.ToJson(player);
-        Debug.Log($"Sending JSON: {json}");  // Agregar log para inspeccionar el contenido del JSON
+        Debug.Log($"Sending JSON: {json}");  
         return Encoding.ASCII.GetBytes(json);
     }
 
     public PlayerState FromBytes(byte[] data, int size)
     {
         string json = Encoding.ASCII.GetString(data, 0, size);
-        Debug.Log($"Received JSON: {json}");  // Agregar log para inspeccionar el contenido del JSON
+        Debug.Log($"Received JSON: {json}");  
         if (json.StartsWith("PlayerData:"))
         {
             json = json.Substring("PlayerData:".Length);

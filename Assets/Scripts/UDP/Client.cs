@@ -121,7 +121,6 @@ public class Client : MonoBehaviour
 
                 if (message == "ServerConnected")
                 {
-                    // Conexión establecida
                     Debug.Log("Conectado al servidor.");
                 }
                 else if (message == "StartGame")
@@ -164,7 +163,7 @@ public class Client : MonoBehaviour
 
         if (receiveThread != null && receiveThread.IsAlive)
         {
-            receiveThread.Join(); // Esperar a que el hilo termine
+            receiveThread.Join(); 
             receiveThread = null;
         }
 
