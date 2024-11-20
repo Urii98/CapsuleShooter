@@ -95,16 +95,16 @@ public class GameManager : MonoBehaviour
     {
         if (playerId == localPlayerId)
         {
-            if (localPlayer != null)
-            {
-                uiOverlay.ShowDeathMessage(respawnTime);
-                Destroy(localPlayer.gameObject);
-            }
+            //if (localPlayer != null)
+            //{
+            //    uiOverlay.ShowDeathMessage(respawnTime);
+            //    Destroy(localPlayer.gameObject);
+            //}
 
             yield return new WaitForSeconds(respawnTime);
 
-            Vector3 spawnPosition = level.GetSpawnPoint(playerId).position;
-            localPlayer = SpawnPlayer(playerId, spawnPosition);
+            //Vector3 spawnPosition = level.GetSpawnPoint(playerId).position;
+            //localPlayer = SpawnPlayer(playerId, spawnPosition);
             localPlayer.ResetPlayer();
         }
     }
