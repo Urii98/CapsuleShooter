@@ -33,7 +33,7 @@
 
 - **Sistema de armas**: Dos armas con características únicas.
 - **Movimiento del jugador**: Incluye salto.
-- **Sistema de balas**: Gestión y disparo.
+- **Sistema de balas**: Disparo.
 - **Sistema de curas aleatorias**: No sincronizado entre clientes (en progreso).
 - **Sistema de estados/acciones del jugador**: Utilizado por el servidor para facilitar la comunicación.
 - Implementaciones adicionales: UI, audio, modelos, escenario, animaciones y efectos visuales (VFX).
@@ -84,5 +84,3 @@
    - Animaciones procesadas por el servidor y visibles en todos los clientes.
 
 ---
-
-¡Gracias por revisar nuestro proyecto! Si tienes sugerencias o encuentras algún problema, no dudes en abrir un *issue* en el repositorio. 🚀
