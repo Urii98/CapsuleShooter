@@ -67,7 +67,7 @@ public class Client : MonoBehaviour
         if (localPlayer != null)
         {
             PlayerState state = gameManager.GetMyState(localPlayer);
-            byte[] data = gameManager.ToBytes(state);
+            byte[] data = gameManager.replicationManager.ToBytes(state);
             socket.SendTo(data, serverEndPoint);
 
             //After sending the info, clear the events so they are not sent again
@@ -131,7 +131,7 @@ public class Client : MonoBehaviour
                 {
                     Debug.Log("Client received PlayerData: " + message);
 
-                    PlayerState playerState = gameManager.FromBytes(data, receivedDataLength);
+                    PlayerState playerState = gameManager.replicationManager.FromBytes(data, receivedDataLength);
                     OnPlayerDataReceived?.Invoke(playerState);
                 }
             }

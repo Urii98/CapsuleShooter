@@ -43,7 +43,11 @@ public class GameManager : MonoBehaviour
     [HideInInspector] public string localPlayerId;
     [HideInInspector] public List<Events> events; 
 
-    public Client client; 
+    public Client client;
+
+
+    [HideInInspector]
+    public ReplicationManager replicationManager;
 
     private bool spawn = false;
     private bool movement = false;
@@ -65,6 +69,8 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
+        replicationManager = gameObject.AddComponent<ReplicationManager>();
+
         if (isMultiplayer)
         {
             InitializeMultiplayerGame();
@@ -237,33 +243,7 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    // JSON utility
-    public byte[] ToBytes(PlayerState player)
-    {
-        string json = "PlayerData:" + JsonUtility.ToJson(player);
-        Debug.Log($"Sending JSON: {json}");  
-        return Encoding.ASCII.GetBytes(json);
-    }
-
-    public PlayerState FromBytes(byte[] data, int size)
-    {
-        string json = Encoding.ASCII.GetString(data, 0, size);
-        Debug.Log($"Received JSON: {json}");  
-        if (json.StartsWith("PlayerData:"))
-        {
-            json = json.Substring("PlayerData:".Length);
-        }
-
-        try
-        {
-            return JsonUtility.FromJson<PlayerState>(json);
-        }
-        catch (Exception e)
-        {
-            Debug.LogError($"Error parsing JSON: {e.Message}");
-            return default;
-        }
-    }
+  
 
     // Player to PlayerState
     public PlayerState GetMyState(Player myPlayer)
