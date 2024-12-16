@@ -14,8 +14,11 @@ public enum Events
     UNPAUSE,
     RESET,
     HEAL,
+    SPAWNHEAL,
+    REMOVEHEAL,
     NUMEVENTS
 }
+
 public struct PlayerState
 {
     public string id;
@@ -25,6 +28,7 @@ public struct PlayerState
     public int kills;
     public List<Events> events;
 }
+
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
@@ -41,10 +45,9 @@ public class GameManager : MonoBehaviour
     [Header("Multiplayer")]
     public bool isMultiplayer = false;
     [HideInInspector] public string localPlayerId;
-    [HideInInspector] public List<Events> events; 
+    [HideInInspector] public List<Events> events;
 
     public Client client;
-
 
     [HideInInspector]
     public ReplicationManager replicationManager;
@@ -53,13 +56,18 @@ public class GameManager : MonoBehaviour
     private bool movement = false;
     private bool hasEvents = false;
 
-    PlayerState otherState; 
+    PlayerState otherState;
+
+    private List<HealData> spawnHeals = new List<HealData>();
+    private List<int> removeHeals = new List<int>();
+
+    private Dictionary<int, GameObject> healsDict = new Dictionary<int, GameObject>();
 
     private void Awake()
     {
         if (Instance != null && Instance != this)
         {
-                Destroy(gameObject);
+            Destroy(gameObject);
         }
         else
         {
@@ -79,7 +87,6 @@ public class GameManager : MonoBehaviour
 
     private void InitializeMultiplayerGame()
     {
-        
         Vector3 spawnPosition = level.GetSpawnPoint(localPlayerId).position;
         localPlayer = SpawnPlayer(localPlayerId, spawnPosition);
         localPlayer.SetPlayerAsLocal();
@@ -101,16 +108,7 @@ public class GameManager : MonoBehaviour
     {
         if (playerId == localPlayerId)
         {
-            //if (localPlayer != null)
-            //{
-            //    uiOverlay.ShowDeathMessage(respawnTime);
-            //    Destroy(localPlayer.gameObject);
-            //}
-
             yield return new WaitForSeconds(respawnTime);
-
-            //Vector3 spawnPosition = level.GetSpawnPoint(playerId).position;
-            //localPlayer = SpawnPlayer(playerId, spawnPosition);
             localPlayer.ResetPlayer();
         }
     }
@@ -126,49 +124,38 @@ public class GameManager : MonoBehaviour
 
         if (state.id == localPlayerId)
         {
-            return; // Do not update the local player
-        }
-        else
-        {
-
+            return; // No actualiza el local player
         }
 
         if (remotePlayers.ContainsKey(state.id))
         {
-            // Update existing player's position
             otherState.id = state.id;
             otherState.pos = state.pos;
             otherState.rot = state.rot;
-            if(state.events != null)
+            if (state.events != null)
             {
                 otherState.events = state.events;
                 hasEvents = true;
             }
-           
+
             movement = true;
-            Debug.Log($"Updated position of remote player {state.id}");
         }
         else
         {
-            // Spawn new remote player
             spawn = true;
             otherState.id = state.id;
             otherState.pos = state.pos;
-
         }
     }
 
-
     private void Update()
     {
-        if(spawn)
+        if (spawn)
         {
             Player newPlayer = SpawnPlayer(otherState.id, otherState.pos);
             remotePlayers.Add(otherState.id, newPlayer);
             newPlayer.PlayerSetup();
             newPlayer.enabled = false;
-
-            Debug.Log($"Spawned new remote player {otherState.id}");
             spawn = false;
         }
         else if (movement)
@@ -185,7 +172,7 @@ public class GameManager : MonoBehaviour
 
             float angleDifference = Quaternion.Angle(currentRotation, Quaternion.Euler(otherState.rot));
 
-            if (angleDifference > 1.0f) 
+            if (angleDifference > 1.0f)
             {
                 remotePlayer.transform.rotation = Quaternion.Lerp(currentRotation, Quaternion.Euler(otherState.rot), Time.deltaTime * 50.0f);
             }
@@ -195,40 +182,71 @@ public class GameManager : MonoBehaviour
                 UpdateEvents();
                 hasEvents = false;
             }
-                
 
             movement = false;
         }
     }
+
     private void UpdateEvents()
     {
-        Player remotePlayer = remotePlayers[otherState.id];
+        Player remotePlayer = null;
+        if (remotePlayers.ContainsKey(otherState.id))
+        {
+            remotePlayer = remotePlayers[otherState.id];
+        }
+
+        // Procesamos los eventos
         foreach (Events e in otherState.events)
         {
             switch (e)
             {
                 case Events.KILL:
-                    remotePlayers[otherState.id].AddKill();
+                    if (remotePlayer != null)
+                        remotePlayer.AddKill();
                     break;
                 case Events.HEAL:
-                    remotePlayers[otherState.id].Heal(20);
+                    if (remotePlayer != null)
+                        remotePlayer.Heal(20);
                     break;
                 case Events.DISCONNECT:
-                    //HandleDisconnect;
-                    break; 
+                    break;
                 case Events.PAUSE:
-                    //HandlePause;
                     break;
                 case Events.UNPAUSE:
-                    //HandleUnpause;
                     break;
                 case Events.RESET:
-                    //HandleReset;
                     break;
                 case Events.SHOOT:
-                    if(otherState.id != localPlayer.playerId)
+                    if (remotePlayer != null && otherState.id != localPlayer.playerId)
                     {
                         remotePlayer.weaponController.weapon.Shoot();
+                    }
+                    break;
+                case Events.SPAWNHEAL:
+                    if (spawnHeals.Count > 0)
+                    {
+                        HealData hd = spawnHeals[0];
+                        spawnHeals.RemoveAt(0);
+                        GameObject healObj = Instantiate(level.healPrefab, hd.position, Quaternion.identity);
+                        HealItem hi = healObj.GetComponent<HealItem>();
+                        if (hi != null)
+                        {
+                            hi.healId = hd.id;
+                            hi.gameManager = this;
+                        }
+                        healsDict[hd.id] = healObj;
+                    }
+                    break;
+                case Events.REMOVEHEAL:
+                    if (removeHeals.Count > 0)
+                    {
+                        int healId = removeHeals[0];
+                        removeHeals.RemoveAt(0);
+                        if (healsDict.TryGetValue(healId, out GameObject healObj))
+                        {
+                            Destroy(healObj);
+                            healsDict.Remove(healId);
+                        }
                     }
                     break;
             }
@@ -243,9 +261,6 @@ public class GameManager : MonoBehaviour
         }
     }
 
-  
-
-    // Player to PlayerState
     public PlayerState GetMyState(Player myPlayer)
     {
         PlayerState state = new PlayerState
@@ -264,5 +279,39 @@ public class GameManager : MonoBehaviour
     {
         events.Add(e);
     }
+
+    public void AddSpawnHealEvent(HealData hd)
+    {
+        spawnHeals.Add(hd);
+        events.Add(Events.SPAWNHEAL);
+    }
+
+    public void AddRemoveHealEvent(int healId)
+    {
+        removeHeals.Add(healId);
+        events.Add(Events.REMOVEHEAL);
+    }
+
+    public void AddSpawnHealEventServer(HealData hd)
+    {
+        GameObject healObj = Instantiate(level.healPrefab, hd.position, Quaternion.identity);
+        HealItem hi = healObj.GetComponent<HealItem>();
+        if (hi != null)
+        {
+            hi.healId = hd.id;
+            hi.gameManager = this;
+        }
+        healsDict[hd.id] = healObj;
+    }
+
+    public void AddRemoveHealEventServer(int healId)
+    {
+        if (healsDict.TryGetValue(healId, out GameObject healObj))
+        {
+            Destroy(healObj);
+            healsDict.Remove(healId);
+        }
+    }
+
 }
 

@@ -8,6 +8,7 @@ public class Level : MonoBehaviour
     public Transform player2SpawnPoint;
     public GameObject map;
     public GameObject spawnPlane;
+    public GameObject healPrefab;
 
     [HideInInspector]
     public Bounds spawnBounds;

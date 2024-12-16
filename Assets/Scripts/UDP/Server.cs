@@ -5,13 +5,20 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using UnityEngine;
+using System.Collections.Concurrent; // Para ConcurrentQueue
+
+[Serializable]
+public struct HealData
+{
+    public int id;
+    public Vector3 position;
+}
 
 public class ConnectedClient
 {
     public string PlayerId { get; set; }
     public EndPoint EndPoint { get; set; }
 }
-
 
 public class Server : MonoBehaviour
 {
@@ -23,17 +30,27 @@ public class Server : MonoBehaviour
     private bool isRunning = false;
 
     public MainMenuManager mainMenuManager;
+    public HealSpawner healSpawner;
 
     private bool enableStartButton = false;
+
+    private Dictionary<int, HealData> activeHeals = new Dictionary<int, HealData>();
+    private int nextHealId = 0;
+
+    
+    private ConcurrentQueue<int> healsToRemove = new ConcurrentQueue<int>();
 
     private void Start()
     {
         mainMenuManager = FindAnyObjectByType<MainMenuManager>();
+        healSpawner = FindObjectOfType<HealSpawner>(true);
+        healSpawner.server = this;
+        healSpawner.enabled = true;
     }
 
     public void StartServer()
     {
-        port = 9000; 
+        port = 9000;
         try
         {
             socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
@@ -59,6 +76,11 @@ public class Server : MonoBehaviour
             enableStartButton = false;
             mainMenuManager.EnableStartButton();
         }
+
+        while (healsToRemove.TryDequeue(out int healId))
+        {
+            RemoveHealOnServer(healId);
+        }
     }
 
     private void ListenForClients()
@@ -77,13 +99,11 @@ public class Server : MonoBehaviour
 
                 if (message.StartsWith("ClientConnected:"))
                 {
-                    // Extract playerId from client
                     string[] parts = message.Split(':');
                     string playerId = parts[1];
 
                     lock (connectedClients)
                     {
-                        // Check if the client is already connected
                         bool alreadyConnected = connectedClients.Exists(c => c.PlayerId == playerId);
                         if (!alreadyConnected)
                         {
@@ -94,7 +114,6 @@ public class Server : MonoBehaviour
                             };
                             connectedClients.Add(newClient);
 
-                            // Enable the start button if necessary
                             if (connectedClients.Count > 1)
                             {
                                 enableStartButton = true;
@@ -104,27 +123,28 @@ public class Server : MonoBehaviour
                         }
                     }
 
-                    // Enviar confirmación al cliente
                     byte[] responseData = Encoding.ASCII.GetBytes("ServerConnected");
                     socket.SendTo(responseData, clientEndPoint);
 
                 }
                 else if (message.StartsWith("PlayerData:"))
                 {
-                    Debug.Log("Server received PlayerData from client: " + message);
-
-                    // Retransmit the message to all clients, including the sender
                     lock (connectedClients)
                     {
                         foreach (ConnectedClient client in connectedClients)
                         {
                             socket.SendTo(data, receivedDataLength, SocketFlags.None, client.EndPoint);
-                            Debug.Log("Server retransmitted PlayerData to client: " + client.PlayerId + " at " + client.EndPoint.ToString());
                         }
                     }
                 }
+                else if (message.StartsWith("HealPicked:"))
+                {
+                    
+                    string json = message.Substring("HealPicked:".Length);
+                    HealData healPicked = JsonUtility.FromJson<HealData>(json);
 
-
+                    healsToRemove.Enqueue(healPicked.id);
+                }
             }
             catch (SocketException ex)
             {
@@ -141,8 +161,6 @@ public class Server : MonoBehaviour
 
     public void StartGame()
     {
-        // Send message to all clients so game starts
-
         byte[] startGameMessage = Encoding.ASCII.GetBytes("StartGame");
 
         lock (connectedClients)
@@ -154,9 +172,52 @@ public class Server : MonoBehaviour
         }
     }
 
-    private void OnDestroy()
+    public void SpawnHealOnServer(Vector3 position)
     {
-        StopServer();
+       
+        HealData healData = new HealData
+        {
+            id = nextHealId++,
+            position = position
+        };
+        activeHeals[healData.id] = healData;
+
+        string msg = "SpawnHeal:" + JsonUtility.ToJson(healData);
+        BroadcastToAllClients(msg);
+
+        
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.AddSpawnHealEventServer(healData);
+        }
+    }
+
+    public void RemoveHealOnServer(int healId)
+    {
+        
+        if (activeHeals.ContainsKey(healId))
+        {
+            activeHeals.Remove(healId);
+            string msg = "RemoveHeal:{\"id\":" + healId + "}";
+            BroadcastToAllClients(msg);
+
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.AddRemoveHealEventServer(healId);
+            }
+        }
+    }
+
+    private void BroadcastToAllClients(string message)
+    {
+        byte[] data = Encoding.ASCII.GetBytes(message);
+        lock (connectedClients)
+        {
+            foreach (ConnectedClient client in connectedClients)
+            {
+                socket.SendTo(data, client.EndPoint);
+            }
+        }
     }
 
     public void StopServer()
@@ -171,9 +232,13 @@ public class Server : MonoBehaviour
 
         if (listenThread != null && listenThread.IsAlive)
         {
-            listenThread.Join(); 
+            listenThread.Join();
             listenThread = null;
         }
+    }
 
+    private void OnDestroy()
+    {
+        StopServer();
     }
 }

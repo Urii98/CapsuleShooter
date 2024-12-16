@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -7,27 +8,26 @@ using UnityEngine;
 
 public class Client : MonoBehaviour
 {
+  
+
     private Socket socket;
     private EndPoint serverEndPoint;
     private Thread receiveThread;
     private bool isRunning = false;
 
-    // Variables compartidas
     private bool startGame = false;
 
     public MainMenuManager mainMenuManager;
     [HideInInspector] public string localPlayerId;
-    public GameManager gameManager; 
+    public GameManager gameManager;
 
     public delegate void PlayerDataReceivedHandler(PlayerState recievedState);
     public event PlayerDataReceivedHandler OnPlayerDataReceived;
-
 
     void Start()
     {
         mainMenuManager = FindAnyObjectByType<MainMenuManager>();
 
-        // Try to find the GameManager instance
         if (gameManager == null)
         {
             gameManager = FindObjectOfType<GameManager>(true);
@@ -41,18 +41,6 @@ public class Client : MonoBehaviour
         {
             startGame = false;
             mainMenuManager.StartGame();
-        }
-
-        if (isRunning && startGame)
-        {
-            if (gameManager == null)
-            {
-                Debug.LogError("Client: gameManager is null");
-            }
-            else if (gameManager.GetLocalPlayer() == null && gameManager.gameObject.activeInHierarchy)
-            {
-                Debug.LogError("Client: GetLocalPlayer() returned null");
-            }
         }
 
         if (isRunning && gameManager != null && gameManager.GetLocalPlayer() != null)
@@ -70,11 +58,9 @@ public class Client : MonoBehaviour
             byte[] data = gameManager.replicationManager.ToBytes(state);
             socket.SendTo(data, serverEndPoint);
 
-            //After sending the info, clear the events so they are not sent again
             gameManager.events.Clear();
         }
     }
-
 
     public bool ConnectToServer(string ip, int port)
     {
@@ -84,13 +70,11 @@ public class Client : MonoBehaviour
 
             serverEndPoint = new IPEndPoint(IPAddress.Parse(ip), port);
 
-            // Send connection message
             string connectMessage = $"ClientConnected:{localPlayerId}";
             byte[] data = Encoding.ASCII.GetBytes(connectMessage);
             socket.SendTo(data, serverEndPoint);
             Debug.Log("Sent 'ClientConnected' to server.");
 
-            // Start receive thread
             isRunning = true;
             receiveThread = new Thread(ReceiveData);
             receiveThread.IsBackground = true;
@@ -103,7 +87,6 @@ public class Client : MonoBehaviour
             return false;
         }
     }
-
 
     private void ReceiveData()
     {
@@ -129,20 +112,41 @@ public class Client : MonoBehaviour
                 }
                 else if (message.StartsWith("PlayerData:"))
                 {
-                    Debug.Log("Client received PlayerData: " + message);
-
                     PlayerState playerState = gameManager.replicationManager.FromBytes(data, receivedDataLength);
                     OnPlayerDataReceived?.Invoke(playerState);
+                }
+                else if (message.StartsWith("SpawnHeal:"))
+                {
+
+                    string json = message.Substring("SpawnHeal:".Length);
+                    HealData healData = JsonUtility.FromJson<HealData>(json);
+                    gameManager.AddSpawnHealEvent(healData); 
+                }
+                else if (message.StartsWith("RemoveHeal:"))
+                {
+                    
+                    string json = message.Substring("RemoveHeal:".Length);
+                    HealData healData = JsonUtility.FromJson<HealData>(json);
+                    gameManager.AddRemoveHealEvent(healData.id);
                 }
             }
             catch (SocketException ex)
             {
-               Debug.LogWarning(ex.Message);
+                Debug.LogWarning(ex.Message);
             }
             catch (Exception ex)
             {
-               Debug.LogWarning(ex.Message);
+                Debug.LogWarning(ex.Message);
             }
+        }
+    }
+
+    public void SendToServer(string message)
+    {
+        if (socket != null && isRunning)
+        {
+            byte[] data = Encoding.ASCII.GetBytes(message);
+            socket.SendTo(data, serverEndPoint);
         }
     }
 
@@ -163,10 +167,10 @@ public class Client : MonoBehaviour
 
         if (receiveThread != null && receiveThread.IsAlive)
         {
-            receiveThread.Join(); 
+            receiveThread.Join();
             receiveThread = null;
         }
 
-        Debug.Log("Cliente desconectado, localplayerID: ." + localPlayerId);
+        Debug.Log("Cliente desconectado, localplayerID: " + localPlayerId);
     }
 }

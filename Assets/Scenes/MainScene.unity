@@ -1316,6 +1316,7 @@ MonoBehaviour:
   localPlayerId: Player1
   events: 
   client: {fileID: 0}
+  replicationManager: {fileID: 0}
 --- !u!4 &242375625
 Transform:
   m_ObjectHideFlags: 0
@@ -4626,7 +4627,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1068128742}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b3dfcef5b89e2864f8e965e0eca07114, type: 3}
   m_Name: 
@@ -4634,6 +4635,7 @@ MonoBehaviour:
   healPrefab: {fileID: 258542746320911798, guid: b3786c013b6d03449b5d72151d3ef071, type: 3}
   spawnInterval: 10
   level: {fileID: 5605592631045878560}
+  server: {fileID: 0}
 --- !u!1 &1071646988
 GameObject:
   m_ObjectHideFlags: 0
@@ -10319,6 +10321,7 @@ MonoBehaviour:
   player2SpawnPoint: {fileID: 916101503}
   map: {fileID: 1646880230536404949}
   spawnPlane: {fileID: 2313410851721438840}
+  healPrefab: {fileID: 258542746320911798, guid: b3786c013b6d03449b5d72151d3ef071, type: 3}
   spawnBounds:
     m_Center: {x: 0, y: 0, z: 0}
     m_Extent: {x: 0, y: 0, z: 0}
