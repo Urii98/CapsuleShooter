@@ -176,7 +176,7 @@ public class GameManager : MonoBehaviour
 
             spawnHealBool = false;
         }
-        else if(spawnRemoveBool)
+        else if (spawnRemoveBool)
         {
             if (removeHeals.Count > 0)
             {
@@ -288,7 +288,7 @@ public class GameManager : MonoBehaviour
     public void AddSpawnHealEvent(HealData hd)
     {
         spawnHealBool = true;
-        spawnHeals.Add(hd);        
+        spawnHeals.Add(hd);
     }
 
     public void AddRemoveHealEvent(int healId)
@@ -298,4 +298,3 @@ public class GameManager : MonoBehaviour
     }
 
 }
-

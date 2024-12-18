@@ -20,7 +20,7 @@ public class ConnectedClient
     public EndPoint EndPoint { get; set; }
 }
 
-public class Server : MonoBehaviour
+public class Server : MonoBehaviour, Networking
 {
     public int port { get; private set; }
 
@@ -48,7 +48,7 @@ public class Server : MonoBehaviour
         healSpawner.enabled = true;
     }
 
-    public void StartServer()
+    public void OnStart()
     {
         port = 9000;
         try
@@ -69,13 +69,117 @@ public class Server : MonoBehaviour
         }
     }
 
-    private void Update()
+    public void OnPacketReceived(byte[] inputPacket, EndPoint fromAddress, int Length)
+    {
+        string message = Encoding.ASCII.GetString(inputPacket, 0, Length);
+
+        Debug.Log($"Server received message from {fromAddress}: {message}");
+
+        if (message.StartsWith("ClientConnected:"))
+        {
+            string[] parts = message.Split(':');
+            string playerId = parts[1];
+
+            lock (connectedClients)
+            {
+                bool alreadyConnected = connectedClients.Exists(c => c.PlayerId == playerId);
+                if (!alreadyConnected)
+                {
+                    ConnectedClient newClient = new ConnectedClient
+                    {
+                        PlayerId = playerId,
+                        EndPoint = fromAddress
+                    };
+                    connectedClients.Add(newClient);
+
+                    if (connectedClients.Count > 1)
+                    {
+                        enableStartButton = true;
+                    }
+
+                    Debug.Log($"Added new client: {playerId} from {fromAddress}");
+                }
+            }
+            byte[] data = Encoding.ASCII.GetBytes("ServerConnected");
+            SendPacket(data, fromAddress);
+
+        }
+        else if (message.StartsWith("PlayerData:"))
+        {
+            lock (connectedClients)
+            {
+                foreach (ConnectedClient client in connectedClients)
+                {
+                    socket.SendTo(inputPacket, Length, SocketFlags.None, client.EndPoint);
+                }
+            }
+        }
+        else if (message.StartsWith("HealPicked:"))
+        {
+
+            string json = message.Substring("HealPicked:".Length);
+            HealData healPicked = JsonUtility.FromJson<HealData>(json);
+
+            lock (connectedClients)
+            {
+                if (activeHeals.ContainsKey(healPicked.id))
+                {
+                    activeHeals.Remove(healPicked.id);
+                    foreach (ConnectedClient client in connectedClients)
+                    {
+                        socket.SendTo(inputPacket, Length, SocketFlags.None, fromAddress);
+                    }
+                }
+
+            }
+        }
+    }
+
+    public void OnUpdate()
     {
         if (enableStartButton)
         {
             enableStartButton = false;
             mainMenuManager.EnableStartButton();
         }
+    }
+
+    public void OnConnectionReset(EndPoint fromAddress)
+    {
+
+    }
+
+    public void SendPacket(byte[] packet, EndPoint toAddress)
+    {
+        socket.SendTo(packet, toAddress);
+    }
+
+    public void OnDisconnect()
+    {
+
+        isRunning = false;
+
+        if (socket != null)
+        {
+            socket.Close();
+            socket = null;
+        }
+
+        if (listenThread != null && listenThread.IsAlive)
+        {
+            listenThread.Join();
+            listenThread = null;
+        }
+    }
+
+    public void ReportError(string message)
+    {
+        Debug.LogWarning("Error: " + message);
+    }
+
+    private void Update()
+    {
+        OnUpdate();
     }
 
     private void ListenForClients()
@@ -88,69 +192,7 @@ public class Server : MonoBehaviour
                 EndPoint clientEndPoint = new IPEndPoint(IPAddress.Any, 0);
                 int receivedDataLength = socket.ReceiveFrom(data, ref clientEndPoint);
 
-                string message = Encoding.ASCII.GetString(data, 0, receivedDataLength);
-
-                Debug.Log($"Server received message from {clientEndPoint}: {message}");
-
-                if (message.StartsWith("ClientConnected:"))
-                {
-                    string[] parts = message.Split(':');
-                    string playerId = parts[1];
-
-                    lock (connectedClients)
-                    {
-                        bool alreadyConnected = connectedClients.Exists(c => c.PlayerId == playerId);
-                        if (!alreadyConnected)
-                        {
-                            ConnectedClient newClient = new ConnectedClient
-                            {
-                                PlayerId = playerId,
-                                EndPoint = clientEndPoint
-                            };
-                            connectedClients.Add(newClient);
-
-                            if (connectedClients.Count > 1)
-                            {
-                                enableStartButton = true;
-                            }
-
-                            Debug.Log($"Added new client: {playerId} from {clientEndPoint}");
-                        }
-                    }
-
-                    byte[] responseData = Encoding.ASCII.GetBytes("ServerConnected");
-                    socket.SendTo(responseData, clientEndPoint);
-
-                }
-                else if (message.StartsWith("PlayerData:"))
-                {
-                    lock (connectedClients)
-                    {
-                        foreach (ConnectedClient client in connectedClients)
-                        {
-                            socket.SendTo(data, receivedDataLength, SocketFlags.None, client.EndPoint);
-                        }
-                    }
-                }
-                else if (message.StartsWith("HealPicked:"))
-                {
-                    
-                    string json = message.Substring("HealPicked:".Length);
-                    HealData healPicked = JsonUtility.FromJson<HealData>(json);
-
-                    lock (connectedClients)
-                    {
-                        if (activeHeals.ContainsKey(healPicked.id))
-                        {
-                            activeHeals.Remove(healPicked.id);
-                            foreach (ConnectedClient client in connectedClients)
-                            {
-                                socket.SendTo(data, receivedDataLength, SocketFlags.None, client.EndPoint);
-                            }
-                        }
-
-                    }
-                }
+                OnPacketReceived(data, clientEndPoint, receivedDataLength);
             }
             catch (SocketException ex)
             {
@@ -205,25 +247,8 @@ public class Server : MonoBehaviour
         }
     }
 
-    public void StopServer()
-    {
-        isRunning = false;
-
-        if (socket != null)
-        {
-            socket.Close();
-            socket = null;
-        }
-
-        if (listenThread != null && listenThread.IsAlive)
-        {
-            listenThread.Join();
-            listenThread = null;
-        }
-    }
-
     private void OnDestroy()
     {
-        StopServer();
+        OnDisconnect();
     }
 }

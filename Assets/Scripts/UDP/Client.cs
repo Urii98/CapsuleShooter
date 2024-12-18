@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading;
 using UnityEngine;
 
-public class Client : MonoBehaviour
+public class Client : MonoBehaviour, Networking
 {
   
 
@@ -16,6 +16,8 @@ public class Client : MonoBehaviour
     private bool isRunning = false;
 
     private bool startGame = false;
+    private string ip;
+    private int port;
 
     public MainMenuManager mainMenuManager;
     [HideInInspector] public string localPlayerId;
@@ -35,34 +37,7 @@ public class Client : MonoBehaviour
         }
     }
 
-    void Update()
-    {
-        if (startGame)
-        {
-            startGame = false;
-            mainMenuManager.StartGame();
-        }
-
-        if (isRunning && gameManager != null && gameManager.GetLocalPlayer() != null)
-        {
-            SendPlayerPosition();
-        }
-    }
-
-    void SendPlayerPosition()
-    {
-        Player localPlayer = gameManager.GetLocalPlayer();
-        if (localPlayer != null)
-        {
-            PlayerState state = gameManager.GetMyState(localPlayer);
-            byte[] data = gameManager.replicationManager.ToBytes(state);
-            socket.SendTo(data, serverEndPoint);
-
-            gameManager.events.Clear();
-        }
-    }
-
-    public bool ConnectToServer(string ip, int port)
+    public void OnStart()
     {
         try
         {
@@ -79,13 +54,102 @@ public class Client : MonoBehaviour
             receiveThread = new Thread(ReceiveData);
             receiveThread.IsBackground = true;
             receiveThread.Start();
-            return true;
+            
         }
         catch (Exception ex)
         {
             Debug.Log("Error connecting to server: " + ex.Message);
-            return false;
         }
+    }
+
+    public void OnPacketReceived(byte[] inputPacket, EndPoint fromAddress, int Length)
+    {
+        string message = Encoding.ASCII.GetString(inputPacket, 0, Length);
+
+        Debug.Log($"Client {localPlayerId} received message from {fromAddress}: {message}");
+
+        if (message.Equals("ServerConnected"))
+        {
+            Debug.Log("Conectado al servidor.");
+        }
+        else if (message == "StartGame")
+        {
+            startGame = true;
+        }
+        else if (message.StartsWith("PlayerData:"))
+        {
+            PlayerState playerState = gameManager.replicationManager.FromBytes(inputPacket, inputPacket.Length);
+            OnPlayerDataReceived?.Invoke(playerState);
+        }
+        else if (message.StartsWith("SpawnHeal:"))
+        {
+
+            string json = message.Substring("SpawnHeal:".Length);
+            HealData healData = JsonUtility.FromJson<HealData>(json);
+            gameManager.AddSpawnHealEvent(healData);
+        }
+        else if (message.StartsWith("HealPicked:"))
+        {
+
+            string json = message.Substring("HealPicked:".Length);
+            HealData healData = JsonUtility.FromJson<HealData>(json);
+            gameManager.AddRemoveHealEvent(healData.id);
+        }
+    }
+
+    public void OnUpdate()
+    {
+        if (startGame)
+        {
+            startGame = false;
+            mainMenuManager.StartGame();
+        }
+
+        if (isRunning && gameManager != null && gameManager.GetLocalPlayer() != null)
+        {
+            SendPlayerPosition();
+        }
+    }
+
+    public void OnConnectionReset(EndPoint fromAddress)
+    {
+
+    }
+
+    public void SendPacket(byte[] packet, EndPoint toAddress)
+    {
+        socket.SendTo(packet, toAddress);
+        Debug.Log($"Data sent from {localPlayerId}");
+    }
+
+    public void ReportError(string message)
+    {
+        Debug.LogWarning("Error: " + message);
+    }
+
+    void Update()
+    {
+        OnUpdate();
+    }
+
+    void SendPlayerPosition()
+    {
+        Player localPlayer = gameManager.GetLocalPlayer();
+        if (localPlayer != null)
+        {
+            PlayerState state = gameManager.GetMyState(localPlayer);
+            byte[] data = gameManager.replicationManager.ToBytes(state);
+            SendPacket(data, serverEndPoint);
+
+            gameManager.events.Clear();
+        }
+    }
+
+    public void SetIpAndPort(string ip, int port)
+    {
+        this.ip = ip;
+        this.port = port;
+        OnStart();
     }
 
     private void ReceiveData()
@@ -98,37 +162,7 @@ public class Client : MonoBehaviour
                 EndPoint remoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
                 int receivedDataLength = socket.ReceiveFrom(data, ref remoteEndPoint);
 
-                string message = Encoding.ASCII.GetString(data, 0, receivedDataLength);
-
-                Debug.Log($"Client {localPlayerId} received message from {remoteEndPoint}: {message}");
-
-                if (message == "ServerConnected")
-                {
-                    Debug.Log("Conectado al servidor.");
-                }
-                else if (message == "StartGame")
-                {
-                    startGame = true;
-                }
-                else if (message.StartsWith("PlayerData:"))
-                {
-                    PlayerState playerState = gameManager.replicationManager.FromBytes(data, receivedDataLength);
-                    OnPlayerDataReceived?.Invoke(playerState);
-                }
-                else if (message.StartsWith("SpawnHeal:"))
-                {
-
-                    string json = message.Substring("SpawnHeal:".Length);
-                    HealData healData = JsonUtility.FromJson<HealData>(json);
-                    gameManager.AddSpawnHealEvent(healData); 
-                }
-                else if (message.StartsWith("HealPicked:"))
-                {
-                    
-                    string json = message.Substring("HealPicked:".Length);
-                    HealData healData = JsonUtility.FromJson<HealData>(json);
-                    gameManager.AddRemoveHealEvent(healData.id);
-                }
+                OnPacketReceived(data, remoteEndPoint, receivedDataLength);
             }
             catch (SocketException ex)
             {
@@ -146,16 +180,16 @@ public class Client : MonoBehaviour
         if (socket != null && isRunning)
         {
             byte[] data = Encoding.ASCII.GetBytes(message);
-            socket.SendTo(data, serverEndPoint);
+            SendPacket(data, serverEndPoint);
         }
     }
 
     private void OnDestroy()
     {
-        Disconnect();
+        OnDisconnect();
     }
 
-    public void Disconnect()
+    public void OnDisconnect()
     {
         isRunning = false;
 

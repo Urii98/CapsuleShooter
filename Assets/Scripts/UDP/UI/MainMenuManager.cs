@@ -46,8 +46,8 @@ public class MainMenuManager : MonoBehaviour
         gameManager.isMultiplayer = true;
 
        
-        server.StartServer();
-        client.ConnectToServer("127.0.0.1", server.port);
+        server.OnStart();
+        client.SetIpAndPort("127.0.0.1", server.port);
 
         mainMenuPanel.SetActive(false);
         lobbyPanel.SetActive(true);
@@ -101,7 +101,7 @@ public class MainMenuManager : MonoBehaviour
         gameManager.isMultiplayer = true;
 
         
-        client.ConnectToServer(ip, port);
+        client.SetIpAndPort(ip, port);
         
         if(server != null)
         {
