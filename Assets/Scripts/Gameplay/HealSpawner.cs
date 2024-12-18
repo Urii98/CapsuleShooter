@@ -14,7 +14,7 @@ public class HealSpawner : MonoBehaviour
     {
         if (server == null)
         {
-            Debug.LogError("No hay Server asignado al HealSpawner. Este script debe correr en el servidor.");
+            Debug.LogError("No hay Server asignado al HealSpawner.");
             enabled = false;
             return;
         }
@@ -34,7 +34,7 @@ public class HealSpawner : MonoBehaviour
     private void SpawnHeal()
     {
         Vector3 spawnPosition = level.GetRandomSpawnPoint();
-        spawnPosition.y = 0.5f;
+        spawnPosition.y = 0.1f;
 
         server.SpawnHealOnServer(spawnPosition);
     }

@@ -14,8 +14,6 @@ public enum Events
     UNPAUSE,
     RESET,
     HEAL,
-    SPAWNHEAL,
-    REMOVEHEAL,
     NUMEVENTS
 }
 
@@ -55,6 +53,8 @@ public class GameManager : MonoBehaviour
     private bool spawn = false;
     private bool movement = false;
     private bool hasEvents = false;
+    private bool spawnHealBool = false;
+    private bool spawnRemoveBool = false;
 
     PlayerState otherState;
 
@@ -158,6 +158,38 @@ public class GameManager : MonoBehaviour
             newPlayer.enabled = false;
             spawn = false;
         }
+        else if (spawnHealBool)
+        {
+            if (spawnHeals.Count > 0)
+            {
+                HealData hd = spawnHeals[0];
+                spawnHeals.RemoveAt(0);
+                GameObject healObj = Instantiate(level.healPrefab, hd.position, Quaternion.identity);
+                HealItem hi = healObj.GetComponent<HealItem>();
+                if (hi != null)
+                {
+                    hi.healId = hd.id;
+                    hi.gameManager = this;
+                }
+                healsDict[hd.id] = healObj;
+            }
+
+            spawnHealBool = false;
+        }
+        else if(spawnRemoveBool)
+        {
+            if (removeHeals.Count > 0)
+            {
+                int healId = removeHeals[0];
+                removeHeals.RemoveAt(0);
+                if (healsDict.TryGetValue(healId, out GameObject healObj))
+                {
+                    Destroy(healObj);
+                    healsDict.Remove(healId);
+                }
+            }
+            spawnRemoveBool = false;
+        }
         else if (movement)
         {
             Player remotePlayer = remotePlayers[otherState.id];
@@ -185,6 +217,7 @@ public class GameManager : MonoBehaviour
 
             movement = false;
         }
+
     }
 
     private void UpdateEvents()
@@ -195,7 +228,6 @@ public class GameManager : MonoBehaviour
             remotePlayer = remotePlayers[otherState.id];
         }
 
-        // Procesamos los eventos
         foreach (Events e in otherState.events)
         {
             switch (e)
@@ -220,33 +252,6 @@ public class GameManager : MonoBehaviour
                     if (remotePlayer != null && otherState.id != localPlayer.playerId)
                     {
                         remotePlayer.weaponController.weapon.Shoot();
-                    }
-                    break;
-                case Events.SPAWNHEAL:
-                    if (spawnHeals.Count > 0)
-                    {
-                        HealData hd = spawnHeals[0];
-                        spawnHeals.RemoveAt(0);
-                        GameObject healObj = Instantiate(level.healPrefab, hd.position, Quaternion.identity);
-                        HealItem hi = healObj.GetComponent<HealItem>();
-                        if (hi != null)
-                        {
-                            hi.healId = hd.id;
-                            hi.gameManager = this;
-                        }
-                        healsDict[hd.id] = healObj;
-                    }
-                    break;
-                case Events.REMOVEHEAL:
-                    if (removeHeals.Count > 0)
-                    {
-                        int healId = removeHeals[0];
-                        removeHeals.RemoveAt(0);
-                        if (healsDict.TryGetValue(healId, out GameObject healObj))
-                        {
-                            Destroy(healObj);
-                            healsDict.Remove(healId);
-                        }
                     }
                     break;
             }
@@ -282,35 +287,14 @@ public class GameManager : MonoBehaviour
 
     public void AddSpawnHealEvent(HealData hd)
     {
-        spawnHeals.Add(hd);
-        events.Add(Events.SPAWNHEAL);
+        spawnHealBool = true;
+        spawnHeals.Add(hd);        
     }
 
     public void AddRemoveHealEvent(int healId)
     {
+        spawnRemoveBool = true;
         removeHeals.Add(healId);
-        events.Add(Events.REMOVEHEAL);
-    }
-
-    public void AddSpawnHealEventServer(HealData hd)
-    {
-        GameObject healObj = Instantiate(level.healPrefab, hd.position, Quaternion.identity);
-        HealItem hi = healObj.GetComponent<HealItem>();
-        if (hi != null)
-        {
-            hi.healId = hd.id;
-            hi.gameManager = this;
-        }
-        healsDict[hd.id] = healObj;
-    }
-
-    public void AddRemoveHealEventServer(int healId)
-    {
-        if (healsDict.TryGetValue(healId, out GameObject healObj))
-        {
-            Destroy(healObj);
-            healsDict.Remove(healId);
-        }
     }
 
 }

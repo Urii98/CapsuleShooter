@@ -11,15 +11,15 @@ public class HealItem : MonoBehaviour
         Player player = other.GetComponent<Player>();
         if (player != null)
         {
-            // Curamos localmente al player que lo cogió
             player.Heal(healAmount);
             gameManager.SendEvent(Events.HEAL);
 
-            // Notificamos al servidor que esta cura se ha recogido
             HealData hd = new HealData { id = healId, position = Vector3.zero };
             string msg = "HealPicked:" + JsonUtility.ToJson(hd);
             gameManager.client.SendToServer(msg);
 
+            BoxCollider bc = this.GetComponent<BoxCollider>();
+            bc.enabled = false;
    
         }
     }

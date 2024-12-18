@@ -122,10 +122,10 @@ public class Client : MonoBehaviour
                     HealData healData = JsonUtility.FromJson<HealData>(json);
                     gameManager.AddSpawnHealEvent(healData); 
                 }
-                else if (message.StartsWith("RemoveHeal:"))
+                else if (message.StartsWith("HealPicked:"))
                 {
                     
-                    string json = message.Substring("RemoveHeal:".Length);
+                    string json = message.Substring("HealPicked:".Length);
                     HealData healData = JsonUtility.FromJson<HealData>(json);
                     gameManager.AddRemoveHealEvent(healData.id);
                 }

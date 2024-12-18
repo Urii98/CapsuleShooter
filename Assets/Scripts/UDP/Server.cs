@@ -76,11 +76,6 @@ public class Server : MonoBehaviour
             enableStartButton = false;
             mainMenuManager.EnableStartButton();
         }
-
-        while (healsToRemove.TryDequeue(out int healId))
-        {
-            RemoveHealOnServer(healId);
-        }
     }
 
     private void ListenForClients()
@@ -143,7 +138,18 @@ public class Server : MonoBehaviour
                     string json = message.Substring("HealPicked:".Length);
                     HealData healPicked = JsonUtility.FromJson<HealData>(json);
 
-                    healsToRemove.Enqueue(healPicked.id);
+                    lock (connectedClients)
+                    {
+                        if (activeHeals.ContainsKey(healPicked.id))
+                        {
+                            activeHeals.Remove(healPicked.id);
+                            foreach (ConnectedClient client in connectedClients)
+                            {
+                                socket.SendTo(data, receivedDataLength, SocketFlags.None, client.EndPoint);
+                            }
+                        }
+
+                    }
                 }
             }
             catch (SocketException ex)
@@ -185,27 +191,6 @@ public class Server : MonoBehaviour
         string msg = "SpawnHeal:" + JsonUtility.ToJson(healData);
         BroadcastToAllClients(msg);
 
-        
-        if (GameManager.Instance != null)
-        {
-            GameManager.Instance.AddSpawnHealEventServer(healData);
-        }
-    }
-
-    public void RemoveHealOnServer(int healId)
-    {
-        
-        if (activeHeals.ContainsKey(healId))
-        {
-            activeHeals.Remove(healId);
-            string msg = "RemoveHeal:{\"id\":" + healId + "}";
-            BroadcastToAllClients(msg);
-
-            if (GameManager.Instance != null)
-            {
-                GameManager.Instance.AddRemoveHealEventServer(healId);
-            }
-        }
     }
 
     private void BroadcastToAllClients(string message)
