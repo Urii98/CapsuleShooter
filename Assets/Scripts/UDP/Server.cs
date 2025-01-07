@@ -127,7 +127,7 @@ public class Server : MonoBehaviour, Networking
                     activeHeals.Remove(healPicked.id);
                     foreach (ConnectedClient client in connectedClients)
                     {
-                        socket.SendTo(inputPacket, Length, SocketFlags.None, fromAddress);
+                        socket.SendTo(inputPacket, Length, SocketFlags.None, client.EndPoint);
                     }
                 }
 
