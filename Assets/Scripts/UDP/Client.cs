@@ -47,7 +47,7 @@ public class Client : MonoBehaviour, Networking
 
             string connectMessage = $"ClientConnected:{localPlayerId}";
             byte[] data = Encoding.ASCII.GetBytes(connectMessage);
-            socket.SendTo(data, serverEndPoint);
+            SendPacket(data, serverEndPoint);
             Debug.Log("Sent 'ClientConnected' to server.");
 
             isRunning = true;

@@ -110,7 +110,7 @@ public class Server : MonoBehaviour, Networking
             {
                 foreach (ConnectedClient client in connectedClients)
                 {
-                    socket.SendTo(inputPacket, Length, SocketFlags.None, client.EndPoint);
+                    SendPacket(inputPacket, Length, SocketFlags.None, client.EndPoint);
                 }
             }
         }
@@ -127,7 +127,7 @@ public class Server : MonoBehaviour, Networking
                     activeHeals.Remove(healPicked.id);
                     foreach (ConnectedClient client in connectedClients)
                     {
-                        socket.SendTo(inputPacket, Length, SocketFlags.None, client.EndPoint);
+                        SendPacket(inputPacket, Length, SocketFlags.None, client.EndPoint);
                     }
                 }
 
@@ -152,6 +152,11 @@ public class Server : MonoBehaviour, Networking
     public void SendPacket(byte[] packet, EndPoint toAddress)
     {
         socket.SendTo(packet, toAddress);
+    }
+
+    public void SendPacket(byte[] packet, int length, SocketFlags socketFlags, EndPoint toAddress)
+    {
+        socket.SendTo(packet, length, socketFlags, toAddress);
     }
 
     public void OnDisconnect()
@@ -215,7 +220,7 @@ public class Server : MonoBehaviour, Networking
         {
             foreach (ConnectedClient client in connectedClients)
             {
-                socket.SendTo(startGameMessage, client.EndPoint);
+                SendPacket(startGameMessage, client.EndPoint);
             }
         }
     }
@@ -242,7 +247,7 @@ public class Server : MonoBehaviour, Networking
         {
             foreach (ConnectedClient client in connectedClients)
             {
-                socket.SendTo(data, client.EndPoint);
+                SendPacket(data, client.EndPoint);
             }
         }
     }
