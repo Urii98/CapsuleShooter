@@ -34,6 +34,8 @@ public class Player : DamageableObject
 
     GameManager gameManager;
 
+
+
     public override void Start()
     {
         base.Start();

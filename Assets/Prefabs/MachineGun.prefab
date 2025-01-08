@@ -113,7 +113,7 @@ MonoBehaviour:
   gunMuzzleTransform: {fileID: 3536014115902897438}
   bulletPrefab: {fileID: 506297843129079274, guid: 5b742114cab090f4c965e111953ecd95, type: 3}
   damage: 20
-  timeBetweenShots: 0.15
+  timeBetweenShots: 1
   bulletContainerTransform: {fileID: 0}
 --- !u!1 &7943406458248303850
 GameObject:

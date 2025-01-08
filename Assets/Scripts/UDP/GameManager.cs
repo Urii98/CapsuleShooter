@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Text;
 using Unity.VisualScripting;
 using UnityEngine;
@@ -51,7 +52,6 @@ public class GameManager : MonoBehaviour
     public ReplicationManager replicationManager;
 
     private bool spawn = false;
-    private bool movement = false;
     private bool hasEvents = false;
     private bool spawnHealBool = false;
     private bool spawnRemoveBool = false;
@@ -62,6 +62,10 @@ public class GameManager : MonoBehaviour
     private List<int> removeHeals = new List<int>();
 
     private Dictionary<int, GameObject> healsDict = new Dictionary<int, GameObject>();
+
+    private Dictionary<string, List<PlayerSnapshot>> playerSnapshots = new Dictionary<string, List<PlayerSnapshot>>();
+
+    private ConcurrentQueue<PlayerState> receivedStates = new ConcurrentQueue<PlayerState>();
 
     private void Awake()
     {
@@ -120,11 +124,16 @@ public class GameManager : MonoBehaviour
 
     private void HandlePlayerDataReceived(PlayerState state)
     {
-        Debug.Log($"HandlePlayerDataReceived called for playerId: {state.id}, position: {state.pos}, rotation: {state.rot}");
+        receivedStates.Enqueue(state);
+    }
+
+    private void ProcessReceivedState(PlayerState state)
+    {
+        Debug.Log($"ProcessReceivedState called for playerId: {state.id}, position: {state.pos}, rotation: {state.rot}");
 
         if (state.id == localPlayerId)
         {
-            return; // No actualiza el local player
+            return; 
         }
 
         if (remotePlayers.ContainsKey(state.id))
@@ -137,8 +146,6 @@ public class GameManager : MonoBehaviour
                 otherState.events = state.events;
                 hasEvents = true;
             }
-
-            movement = true;
         }
         else
         {
@@ -146,10 +153,35 @@ public class GameManager : MonoBehaviour
             otherState.id = state.id;
             otherState.pos = state.pos;
         }
+
+        if (!playerSnapshots.ContainsKey(state.id))
+        {
+            playerSnapshots[state.id] = new List<PlayerSnapshot>();
+        }
+
+        float now = Time.time; 
+
+        Quaternion rot = Quaternion.Euler(state.rot);
+
+        Debug.Log($"Creating snapshot for {state.id}: time={now}, pos={state.pos}, rot={rot}");
+
+        playerSnapshots[state.id].Add(new PlayerSnapshot(now, state.pos, rot));
+
+        if (playerSnapshots[state.id].Count > 20)
+        {
+            playerSnapshots[state.id].RemoveRange(0, playerSnapshots[state.id].Count - 20);
+        }
     }
 
     private void Update()
     {
+        while (receivedStates.TryDequeue(out PlayerState state))
+        {
+            ProcessReceivedState(state);
+        }
+
+        InterpolatingRemotePlayers();
+
         if (spawn)
         {
             Player newPlayer = SpawnPlayer(otherState.id, otherState.pos);
@@ -190,34 +222,70 @@ public class GameManager : MonoBehaviour
             }
             spawnRemoveBool = false;
         }
-        else if (movement)
+        else if(hasEvents)
         {
-            Player remotePlayer = remotePlayers[otherState.id];
-            Vector3 currentPosition = remotePlayer.transform.position;
-            Quaternion currentRotation = remotePlayer.transform.rotation;
-
-            float distance = Vector3.Distance(currentPosition, otherState.pos);
-            if (distance > 0.1f)
-            {
-                remotePlayer.transform.position = Vector3.Lerp(currentPosition, otherState.pos, Time.deltaTime * 50.0f);
-            }
-
-            float angleDifference = Quaternion.Angle(currentRotation, Quaternion.Euler(otherState.rot));
-
-            if (angleDifference > 1.0f)
-            {
-                remotePlayer.transform.rotation = Quaternion.Lerp(currentRotation, Quaternion.Euler(otherState.rot), Time.deltaTime * 50.0f);
-            }
-
-            if (hasEvents)
-            {
-                UpdateEvents();
-                hasEvents = false;
-            }
-
-            movement = false;
+            UpdateEvents();
+            hasEvents = false;
         }
+    }
 
+    private void InterpolatingRemotePlayers()
+    {
+        foreach (var kvp in remotePlayers)
+        {
+            string remotePlayerId = kvp.Key;
+            Player remotePlayer = kvp.Value;
+
+            if (!playerSnapshots.ContainsKey(remotePlayerId))
+                continue;
+
+            var snapshots = playerSnapshots[remotePlayerId];
+            if (snapshots.Count < 2)
+                continue; 
+
+            float interpolationBackTime = 0.1f;
+            float renderTime = Time.time - interpolationBackTime;
+
+            PlayerSnapshot older = snapshots[0];
+            PlayerSnapshot newer = snapshots[snapshots.Count - 1];
+
+            if (newer.time <= renderTime)
+            {
+                remotePlayer.transform.position = newer.position;
+                remotePlayer.transform.rotation = newer.rotation;
+                continue;
+            }
+
+            if (older.time > renderTime)
+            {
+                remotePlayer.transform.position = older.position;
+                remotePlayer.transform.rotation = older.rotation;
+                continue;
+            }
+
+            for (int i = 0; i < snapshots.Count - 1; i++)
+            {
+                if (snapshots[i].time <= renderTime && snapshots[i + 1].time >= renderTime)
+                {
+                    older = snapshots[i];
+                    newer = snapshots[i + 1];
+                    break;
+                }
+            }
+
+            float t = 0f;
+            float duration = (newer.time - older.time);
+            if (duration > 0.0001f)
+            {
+                t = (renderTime - older.time) / duration;
+            }
+
+            Vector3 interpolatedPosition = Vector3.Lerp(older.position, newer.position, t);
+            Quaternion interpolatedRotation = Quaternion.Slerp(older.rotation, newer.rotation, t);
+
+            remotePlayer.transform.position = interpolatedPosition;
+            remotePlayer.transform.rotation = interpolatedRotation;
+        }
     }
 
     private void UpdateEvents()
@@ -296,5 +364,4 @@ public class GameManager : MonoBehaviour
         spawnRemoveBool = true;
         removeHeals.Add(healId);
     }
-
 }
