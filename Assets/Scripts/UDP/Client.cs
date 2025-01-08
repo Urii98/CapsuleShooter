@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -23,13 +22,6 @@ public class Client : MonoBehaviour, Networking
     public MainMenuManager mainMenuManager;
     [HideInInspector] public string localPlayerId;
     public GameManager gameManager;
-
-    // ACK management
-    private int sequenceID = 0; 
-    private Dictionary<int, byte[]> unacknowledgedPackets = new Dictionary<int, byte[]>(); 
-    private float ackTimeout = 1.0f; 
-    private Dictionary<int, DateTime> packetTimestamps = new Dictionary<int, DateTime>(); 
-    private int lastReceivedSequenceID = 0;
 
     public delegate void PlayerDataReceivedHandler(PlayerState recievedState);
     public event PlayerDataReceivedHandler OnPlayerDataReceived;
@@ -76,74 +68,33 @@ public class Client : MonoBehaviour, Networking
 
         Debug.Log($"Client {localPlayerId} received message from {fromAddress}: {message}");
 
-        if (message.StartsWith("ACK:"))
-        {
-            int ackId = int.Parse(message.Substring("ACK:".Length));
-            if (unacknowledgedPackets.ContainsKey(ackId))
-            {
-                unacknowledgedPackets.Remove(ackId);
-                packetTimestamps.Remove(ackId);
-                Debug.Log($"Acknowledged packet with sequenceId: {ackId}");
-            }
-        }
-        else if (message.StartsWith("SyncSeqID:"))
+        if (message.Equals("ServerConnected"))
         {
             Debug.Log("Conectado al servidor.");
-            int syncSeqID = int.Parse(message.Substring("SyncSeqID:".Length));
-            sequenceID = syncSeqID; 
-
-            Debug.Log($"Synced sequenceID with server: {sequenceID}");
-            SendAck(fromAddress);
         }
-        else if (message.StartsWith("StartGame"))
+        else if (message == "StartGame")
         {
             startGame = true;
-            SendAck(fromAddress);
         }
         else if (message.StartsWith("PlayerData:"))
         {
             PlayerState playerState = gameManager.replicationManager.FromBytes(inputPacket, inputPacket.Length);
             OnPlayerDataReceived?.Invoke(playerState);
-
-            SendAck(fromAddress);
         }
         else if (message.StartsWith("SpawnHeal:"))
         {
 
             string json = message.Substring("SpawnHeal:".Length);
-            int indexOfColon = json.LastIndexOf(':');
-            if (indexOfColon != -1)
-            {
-                json = json.Substring(0, indexOfColon);
-            }
             HealData healData = JsonUtility.FromJson<HealData>(json);
             gameManager.AddSpawnHealEvent(healData);
-
-            SendAck(fromAddress);
         }
         else if (message.StartsWith("HealPicked:"))
         {
 
             string json = message.Substring("HealPicked:".Length);
-            int indexOfColon = json.LastIndexOf(':');
-            if (indexOfColon != -1)
-            {
-                json = json.Substring(0, indexOfColon);
-            }
             HealData healData = JsonUtility.FromJson<HealData>(json);
             gameManager.AddRemoveHealEvent(healData.id);
-
-            SendAck(fromAddress);
         }
-
-    }
-
-    private void SendAck(EndPoint toAddress)
-    {
-        string ackMessage = $"ACK:{sequenceID}";
-        byte[] ackData = Encoding.ASCII.GetBytes(ackMessage);
-        socket.SendTo(ackData, toAddress);
-        Debug.Log($"Sent ACK for sequenceId: {sequenceID} to {toAddress}");
     }
 
     public void OnUpdate()
@@ -167,19 +118,8 @@ public class Client : MonoBehaviour, Networking
 
     public void SendPacket(byte[] packet, EndPoint toAddress)
     {
-        sequenceID++;
-        byte[] packetWithId = packet.Concat(Encoding.ASCII.GetBytes($":{sequenceID}")).ToArray(); 
-
-        unacknowledgedPackets[sequenceID] = packetWithId; 
-        packetTimestamps[sequenceID] = DateTime.Now; 
-
-        socket.SendTo(packetWithId, toAddress);
-        Debug.Log($"Sent packet with sequenceId: {sequenceID} and message: {Encoding.ASCII.GetString(packetWithId)} to {toAddress}");
-    }
-    private int GetSequenceIDFromPacket(byte[] packet)
-    {
-        int sequenceID = BitConverter.ToInt32(packet, packet.Length - sizeof(int));
-        return sequenceID;
+        socket.SendTo(packet, toAddress);
+        Debug.Log($"Data sent from {localPlayerId}");
     }
 
     public void ReportError(string message)
@@ -190,27 +130,6 @@ public class Client : MonoBehaviour, Networking
     void Update()
     {
         OnUpdate();
-
-        //List<int> packetsToRetransmit = new List<int>();
-
-
-        //foreach (var pair in packetTimestamps)
-        //{
-        //    if ((DateTime.Now - pair.Value).TotalSeconds > ackTimeout)
-        //    {
-        //        packetsToRetransmit.Add(pair.Key);
-        //    }
-        //}
-
-        //foreach (int seqId in packetsToRetransmit)
-        //{
-        //    if (unacknowledgedPackets.TryGetValue(seqId, out byte[] packet))
-        //    {
-        //        socket.SendTo(packet, serverEndPoint);
-        //        packetTimestamps[seqId] = DateTime.Now;
-        //        Debug.Log($"Retransmitting packet with sequenceId {seqId} and message {Encoding.ASCII.GetString(packet)} ");
-        //    }
-        //}
     }
 
     void SendPlayerPosition()
