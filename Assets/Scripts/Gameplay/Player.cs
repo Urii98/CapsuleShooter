@@ -173,6 +173,17 @@ public class Player : DamageableObject
         transform.rotation = spawnPoint.rotation;
     }
 
+    public float GetCurrentAnimSpeed()
+    {
+        return animator.GetFloat("Speed");
+    }
+
+    public bool GetIsJumping()
+    {
+        return animator.GetBool("IsJumping");
+    }
+
+
     public void BlockMovement()
     {
         isBlocked = true;

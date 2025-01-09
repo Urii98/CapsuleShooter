@@ -26,6 +26,9 @@ public struct PlayerState
     public float health;
     public int kills;
     public List<Events> events;
+
+    public float animSpeed;  
+    public bool isJumping;
 }
 
 public class GameManager : MonoBehaviour
@@ -138,6 +141,10 @@ public class GameManager : MonoBehaviour
 
         if (remotePlayers.ContainsKey(state.id))
         {
+            Player remotePlayer = remotePlayers[state.id];
+            remotePlayer.GetComponent<Animator>().SetFloat("Speed", state.animSpeed);
+            remotePlayer.GetComponent<Animator>().SetBool("IsJumping", state.isJumping);
+
             otherState.id = state.id;
             otherState.pos = state.pos;
             otherState.rot = state.rot;
@@ -344,6 +351,9 @@ public class GameManager : MonoBehaviour
             id = myPlayer.playerId,
             kills = myPlayer.Kills,
             events = events,
+
+            animSpeed = myPlayer.GetCurrentAnimSpeed(),
+            isJumping = myPlayer.GetIsJumping()
         };
         return state;
     }
