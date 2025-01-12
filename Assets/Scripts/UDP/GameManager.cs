@@ -42,7 +42,8 @@ public class GameManager : MonoBehaviour
     private Dictionary<string, Player> remotePlayers = new Dictionary<string, Player>();
 
     public UIOverlay uiOverlay;
-    public float respawnTime = 3.0f;
+    
+    private float respawnTim = 0.1f;
 
     [Header("Multiplayer")]
     public bool isMultiplayer = false;
@@ -115,7 +116,7 @@ public class GameManager : MonoBehaviour
     {
         if (playerId == localPlayerId)
         {
-            yield return new WaitForSeconds(respawnTime);
+            yield return new WaitForSeconds(respawnTim);
             localPlayer.ResetPlayer();
         }
     }
