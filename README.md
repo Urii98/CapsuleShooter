@@ -1,86 +1,87 @@
 # CapsuleShooter 🎮
 
 **Autores:** Oriol Martín Corella, Ignacio Moreno Navarro  
-**Repositorio del proyecto:** [GitHub - CapsuleShooter](https://github.com/Urii98/Lab3Redes)  
-**Lanzamiento:** [GitHub Release](https://github.com/Urii98/Lab3Redes/releases)
+**Repositorio del proyecto:** [GitHub - CapsuleShooter](https://github.com/Urii98/CapsuleShooter)  
+**Release (Build, Video y UnityPackage):** [GitHub Release](https://github.com/Urii98/CapsuleShooter/releases)
 
 ---
 
-## 🎯 Descripción del proyecto
+## 1. Aspectos de red (Networking)
 
-**CapsuleShooter** es un videojuego multijugador desarrollado desde cero en Unity. Este proyecto se centra en implementar una arquitectura cliente-servidor usando UDP, donde uno de los clientes actúa simultáneamente como servidor. Además de la programación de red, incluye sistemas básicos de juego como movimiento, disparo y lógica de estados de los jugadores.
+En esta entrega, **CapsuleShooter** se mantiene como un juego multijugador *cliente-servidor* (UDP), en el que uno de los clientes actúa también como servidor. Los aspectos principales son:
 
----
+- **Arquitectura cliente-servidor sobre UDP**:  
+  Cada cliente se conecta enviando paquetes `PlayerState`, y el servidor reenvía esa información al resto para sincronizar posición, animaciones, etc.
+  
+- **Sistema de replicación**:  
+  - Mantenemos un **paquete de replicación** que incluye información de posición, rotación, salud, eventos de jugador y ahora **parámetros de animación** (velocidad, salto).  
+  - Un **gestor de replicación** en el cliente recibe los estados y los almacena en una **cola de snapshots**, para luego interpolarlos.
 
-## 🚀 Instrucciones de uso
+- **Interpolación de jugadores remotos** (entity interpolation):  
+  - Para evitar movimientos abruptos, el cliente no asigna la posición del jugador remoto directamente, sino que guarda varios “snapshots” y hace **Lerp** entre dos estados en función del tiempo. Esto disimula la latencia y elimina efecto “teleport”.
 
-1. **Ejecuta dos builds por separado**:
-   - En una, selecciona el botón **Crear Partida** en la UI (abajo a la derecha).
-   - En la otra, selecciona el botón **Unirse a Partida** e introduce la IP (solo disponible en red local).
+- **Sistema de *acknowledgements* **:  
+  - Implementado para que el servidor confirme la recepción de los paquetes. 
 
-2. **Controles**:
-   - `WASD`: Movimiento del jugador.
-   - `Espacio`: Salto.
-   - Movimiento del ratón: Rotar cámara.
-   - `Botón izquierdo del ratón`: Disparar.
-
-3. **Escena principal a ejecutar**:  
-   `MainScene`
+En conjunto, estos mecanismos siguen los conceptos de **latency handling** e **integridad de datos** discutidos en las classes de teoría, usando la replicación activa (el servidor distribuye estados a los clientes) y un modelo *host + clientes*.
 
 ---
 
-## 🛠️ Características implementadas
+## 2. Contribuciones del equipo
 
-- **Sistema de armas**: Dos armas con características únicas.
-- **Movimiento del jugador**: Incluye salto.
-- **Sistema de balas**: Disparo.
-- **Sistema de curas aleatorias**: No sincronizado entre clientes (en progreso).
-- **Sistema de estados/acciones del jugador**: Utilizado por el servidor para facilitar la comunicación.
-- Implementaciones adicionales: UI, audio, modelos, escenario, animaciones y efectos visuales (VFX).
+Tal como en las entregas anteriores, hemos trabajado prácticamente siempre juntos en llamadas en discord, haciendo *pair-programming*. En algunas ocasiones uno programaba y el otro revisa/ayuda, en otras ocasiones, al revés.
+
 
 ---
 
-## 🐛 Bugs conocidos
+## 3. Mejoras respecto a entregas anteriores
 
-1. **Movimientos tras morir**: El jugador puede moverse antes de reaparecer.
-2. **Desconexión de clientes**: Si un cliente se desconecta, el otro cliente sigue viendo su posición.
-3. Otros bugs relacionados con la lógica del juego.
+- **Interpolación de jugadores remotos**  
+  - **Antes**: Hablábamos de la posibilidad de interpolar para reducir “teleports”.  
+  - **Ahora**: Lo hemos implementado mediante una **lista de snapshots** (pos, rot, timestamp) que se interpola en el cliente. Se reduce así el movimiento brusco en otros jugadores.
+
+- **Sincronización de animaciones**  
+  - **Antes**: Quedaba pendiente hacer que el resto de clientes vieran las animaciones (correr, salto) del jugador.  
+  - **Ahora**: Incluimos en `PlayerState` campos de animSpeed y isJumping. El servidor los reenvía y cada cliente los aplica al `Animator` del jugador remoto. Así, todos ven correctamente si un jugador está corriendo o saltando.
+
+- **Sistema de acknowledgements**  
+  - **Antes**: Se propuso una forma de asegurarnos de que el servidor confirmara la recepción de datos importantes.  
+  - **Ahora**: Hemos implementado un intercambio básico en UDP para confirmar la llegada de determinados eventos; si el cliente no recibe la confirmación, reenvía el paquete, mejorando la fiabilidad.
+
+- **Mejora de la arquitectura**  
+  - Hemos reforzado la idea de **un hilo de recepción (secundario)** que deposita los datos en una cola (ConcurrentQueue) y luego procesamos todo en el hilo principal de Unity, evitando riesgos de acceso concurrente.
+
+- **Ya no se puede escapar del mapa**
+  - Los personajes ya no pueden caer del mapa, hemos añadido un muro invisible.
+
+- **Ya no se puede mover mientras se reaparece**
+  - Hemos hecho que el respawn sea instantáneo, pensabamos que tardaba en respawnear por algún otro motivo y no sabíamos como arreglar que no se pudiera mover, hasta que vimos que era porque habia un timer hasta hacer el respawn de 3 segundos, que hemos bajado a 0.1.
+
+- ** UI de Vida tanto del player como del enemigo **
+---
+
+## 4. Bugs conocidos
+
+- **UI de Vida no sincronizada para standalone**: La UI de la vida del enemigo no se sincroniza cuando este se cura, solo ocurre cuando se juega en standalone, en el editor si funciona bien. Desconocemos el origen del bug.
+- **Sincronización de proyectiles**: Aún hay casos donde las balas no se muestran igual en todos los clientes (sobre todo si hay pérdida de paquetes), por eso hemos reducido la velocidad de disparo de las armas, solucionandolo aunque no la raíz del problema.
 
 ---
 
-## 💡 Especulaciones técnicas
+## Instrucciones
 
-### Reducir el lag
-- Optimizar el envío de datos para incluir solo información necesaria.
-- Enviar información a intervalos regulares en lugar de cada frame.
-- Implementar interpolación para mejorar la percepción de fluidez.
-- Utilizar UDP (actualmente implementado) para minimizar latencia.
+Hemos desarrollado el juego de manera que uno de los clientes actúa al mismo tiempo también como servidor. De este modo, solo necesitarás ejecutar por separado 2 veces la build:
 
-### Asegurar recepción de mensajes
-- Implementar confirmaciones de recepción de mensajes entre cliente y servidor.
-- Reenviar mensajes automáticamente si no se confirman.
-- Comprobar periódicamente la conexión con los clientes.
+1. Abre dos builds por separado.
+2. En una de estas, pulsa el botón de **"Crear Partida"** en el menú de UI que aparece abajo a la derecha.
+3. En la otra build, pulsa el botón de **"Unirse a Partida"** e introduce el IP. Por ahora está hecho para unirse en local.
 
----
+### Controles
 
-## 🔧 Paquetes y recursos utilizados
+- **WASD**: Movimiento del jugador  
+- **Espacio**: Salto  
+- **Movimiento del ratón**: Rotar cámara  
+- **Botón izquierdo del ratón**: Disparar  
 
-- [DOTween](https://assetstore.unity.com/packages/tools/animation/dotween-hotween-v2-27676): Gestión de animaciones.
-- Otros assets gratuitos incluidos en el Unity Package.
+### Escena principal a ejecutar
 
----
-
-## 📈 Mejoras planeadas
-
-1. **Sincronización de eventos**:
-   - Sistema de curas consumibles que desaparecen para todos los clientes.
-   - VFX de explosión sincronizado al morir un jugador.
-
-2. **Mejoras de gameplay**:
-   - Balas más rápidas o implementadas con raycasts.
-   - Movimientos del jugador más fluidos.
-
-3. **Sincronización de estados**:
-   - Animaciones procesadas por el servidor y visibles en todos los clientes.
-
----
+- **MainScene**
