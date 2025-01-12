@@ -117,6 +117,7 @@ public class GameManager : MonoBehaviour
         {
             yield return new WaitForSeconds(respawnTime);
             localPlayer.ResetPlayer();
+            SendEvent(Events.RESET);
         }
     }
 
@@ -132,7 +133,7 @@ public class GameManager : MonoBehaviour
 
     private void ProcessReceivedState(PlayerState state)
     {
-        Debug.Log($"ProcessReceivedState called for playerId: {state.id}, position: {state.pos}, rotation: {state.rot}");
+        //Debug.Log($"ProcessReceivedState called for playerId: {state.id}, position: {state.pos}, rotation: {state.rot}, health: {state.health}");
 
         if (state.id == localPlayerId)
         {
@@ -148,6 +149,7 @@ public class GameManager : MonoBehaviour
             otherState.id = state.id;
             otherState.pos = state.pos;
             otherState.rot = state.rot;
+            otherState.health = state.health;
             if (state.events != null)
             {
                 otherState.events = state.events;
@@ -159,6 +161,7 @@ public class GameManager : MonoBehaviour
             spawn = true;
             otherState.id = state.id;
             otherState.pos = state.pos;
+            otherState.health = state.health;
         }
 
         if (!playerSnapshots.ContainsKey(state.id))
@@ -170,7 +173,7 @@ public class GameManager : MonoBehaviour
 
         Quaternion rot = Quaternion.Euler(state.rot);
 
-        Debug.Log($"Creating snapshot for {state.id}: time={now}, pos={state.pos}, rot={rot}");
+        //Debug.Log($"Creating snapshot for {state.id}: time={now}, pos={state.pos}, rot={rot}");
 
         playerSnapshots[state.id].Add(new PlayerSnapshot(now, state.pos, rot));
 
@@ -313,7 +316,10 @@ public class GameManager : MonoBehaviour
                     break;
                 case Events.HEAL:
                     if (remotePlayer != null)
+                    {
                         remotePlayer.Heal(20);
+                        Debug.Log("Heal event");
+                    }
                     break;
                 case Events.DISCONNECT:
                     break;
@@ -322,6 +328,8 @@ public class GameManager : MonoBehaviour
                 case Events.UNPAUSE:
                     break;
                 case Events.RESET:
+                    if (remotePlayer != null)
+                        remotePlayer.ResetPlayer();
                     break;
                 case Events.SHOOT:
                     if (remotePlayer != null && otherState.id != localPlayer.playerId)

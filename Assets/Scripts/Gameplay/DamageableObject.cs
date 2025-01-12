@@ -16,7 +16,12 @@ public class DamageableObject : MonoBehaviour
 
     public void TakeDamage(float damage)
     {
+        
         health -= damage;
+        if (this is Player player)
+        {
+            player.healthBar.UpdateHealthBar(health, totalHealth);
+        }
         if (health <= 0)
         {
             OnObjectDied?.Invoke();

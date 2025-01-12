@@ -74,7 +74,7 @@ public class Client : MonoBehaviour, Networking
     {
         string message = Encoding.ASCII.GetString(inputPacket, 0, Length);
 
-        Debug.Log($"Client {localPlayerId} received message from {fromAddress}: {message}");
+        //Debug.Log($"Client {localPlayerId} received message from {fromAddress}: {message}");
 
         if (message.StartsWith("ACK:"))
         {
@@ -143,7 +143,7 @@ public class Client : MonoBehaviour, Networking
         string ackMessage = $"ACK:{sequenceID}";
         byte[] ackData = Encoding.ASCII.GetBytes(ackMessage);
         socket.SendTo(ackData, toAddress);
-        Debug.Log($"Sent ACK for sequenceId: {sequenceID} to {toAddress}");
+        //Debug.Log($"Sent ACK for sequenceId: {sequenceID} to {toAddress}");
     }
 
     public void OnUpdate()
@@ -174,14 +174,8 @@ public class Client : MonoBehaviour, Networking
         packetTimestamps[sequenceID] = DateTime.Now; 
 
         socket.SendTo(packetWithId, toAddress);
-        Debug.Log($"Sent packet with sequenceId: {sequenceID} and message: {Encoding.ASCII.GetString(packetWithId)} to {toAddress}");
+        //Debug.Log($"Sent packet with sequenceId: {sequenceID} and message: {Encoding.ASCII.GetString(packetWithId)} to {toAddress}");
     }
-    private int GetSequenceIDFromPacket(byte[] packet)
-    {
-        int sequenceID = BitConverter.ToInt32(packet, packet.Length - sizeof(int));
-        return sequenceID;
-    }
-
     public void ReportError(string message)
     {
         Debug.LogWarning("Error: " + message);

@@ -19,6 +19,8 @@ public class Player : DamageableObject
     private Camera camara;
     [SerializeField] private Vector3 offsetCamara = new Vector3(0, 2, -5);
 
+    [SerializeField] public HealthBar healthBar;
+
     public WeaponController weaponController;
     [SerializeField] private Rigidbody rb;
     private Animator animator; 
@@ -40,6 +42,7 @@ public class Player : DamageableObject
     {
         base.Start();
         PlayerSetup();
+        healthBar.UpdateHealthBar(health, totalHealth); 
         gameManager = FindObjectOfType<GameManager>();
     }
 
@@ -93,6 +96,7 @@ public class Player : DamageableObject
             }
         }
     }
+    
 
     private void FixedUpdate()
     {
@@ -138,7 +142,8 @@ public class Player : DamageableObject
     public void Heal(float amount)
     {
         health = Mathf.Min(health + amount, totalHealth);
-        Debug.Log($"{playerId} healed by {amount}. Current health: {health}");
+        healthBar.UpdateHealthBar(health, totalHealth);
+        Debug.LogWarning($"{playerId} healed by {amount}. Current health: {health}");
     }
 
     public void AddKill()
@@ -168,6 +173,7 @@ public class Player : DamageableObject
     public void ResetPlayer()
     {
         health = totalHealth;
+        healthBar.UpdateHealthBar(health, totalHealth);
         Transform spawnPoint = GameManager.Instance.level.GetSpawnPoint(playerId);
         transform.position = spawnPoint.position;
         transform.rotation = spawnPoint.rotation;

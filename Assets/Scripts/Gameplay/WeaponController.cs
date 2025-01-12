@@ -16,7 +16,7 @@ public class WeaponController : MonoBehaviour
             Destroy(weapon.gameObject);
         }
 
-        weapon = Instantiate(weaponList[Random.Range(0,2)], weaponHoldTransform.position, weaponHoldTransform.rotation, weaponHoldTransform);
+        weapon = Instantiate(weaponList[0], weaponHoldTransform.position, weaponHoldTransform.rotation, weaponHoldTransform);
     }
 
     public void SwitchWeapon(int index)

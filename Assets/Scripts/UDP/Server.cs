@@ -79,7 +79,7 @@ public class Server : MonoBehaviour, Networking
     {
         string message = Encoding.ASCII.GetString(inputPacket, 0, Length);
 
-        Debug.Log($"Server received message from {fromAddress}: {message}");
+        //Debug.Log($"Server received message from {fromAddress}: {message}");
 
         if (message.StartsWith("ACK:"))
         {
@@ -90,7 +90,7 @@ public class Server : MonoBehaviour, Networking
                 {
                     unacknowledgedPackets.Remove(ackId);
                     packetTimestamps.Remove(ackId);
-                    Debug.Log($"Acknowledged packet with sequenceId: {ackId} from {fromAddress}");
+                    //Debug.Log($"Acknowledged packet with sequenceId: {ackId} from {fromAddress}");
                 }
             }
         }
@@ -176,7 +176,7 @@ public class Server : MonoBehaviour, Networking
         string ackMessage = $"ACK:{clientSequenceIDs[toAddress]}";
         byte[] ackData = Encoding.ASCII.GetBytes(ackMessage);
         socket.SendTo(ackData, toAddress);
-        Debug.Log($"Sent ACK for sequenceId: {clientSequenceIDs[toAddress]} to {toAddress}");
+        //Debug.Log($"Sent ACK for sequenceId: {clientSequenceIDs[toAddress]} to {toAddress}");
     }
 
     public void OnUpdate()
@@ -230,7 +230,7 @@ public class Server : MonoBehaviour, Networking
 
         socket.SendTo(packetWithId, length, socketFlags, toAddress);
 
-        Debug.Log($"Sent packet with sequenceId: {sequenceID} and message: {Encoding.ASCII.GetString(packetWithId)} to {toAddress}");
+        //Debug.Log($"Sent packet with sequenceId: {sequenceID} and message: {Encoding.ASCII.GetString(packetWithId)} to {toAddress}");
     }
 
     public void OnDisconnect()
